@@ -1,0 +1,73 @@
+{
+  "episode": "ep001",
+  "title": "What is an API",
+  "characters": ["peter", "stewie"],
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Hey Stewie, you know what an API is?",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Enlighten me, you simpleton.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "So like, an API is basically a waiter at a restaurant.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "That is a grotesque oversimplification, but continue.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 5,
+      "character": "peter",
+      "line": "You go to a restaurant, you don't walk into the kitchen and start cooking. You tell the waiter what you want.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "So the waiter is the intermediary between you and the kitchen.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "Exactly! The API is the waiter. Your app talks to the API, the API talks to the server, gets the data, brings it back.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "And the menu would be the API documentation. It tells you what you can order.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "See? You get it! REST API, GraphQL, whatever. Same concept. You ask, it delivers.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "I suppose even a simpleton can grasp distributed systems with the right analogy.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 11,
+      "character": "peter",
+      "line": "That's the nicest thing you've ever said to me.",
+      "pause_after_ms": 0
+    }
+  ]
+}

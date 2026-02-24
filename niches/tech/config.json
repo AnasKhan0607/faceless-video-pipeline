@@ -1,0 +1,16 @@
+{
+  "niche": "tech",
+  "name": "Tech Explainers",
+  "character_duos": ["peter_stewie", "babar_virat"],
+  "default_background": "subway_surfers.mp4",
+  "accounts": {
+    "tiktok": "@cooked_cs_kid",
+    "youtube": "@cookedcskid",
+    "instagram": "@cookedcskid"
+  },
+  "hashtags": {
+    "tiktok": "#coding #programming #tech #developer #learntocode #softwareengineering #webdev #computerscience",
+    "youtube": "#shorts #coding #programming #tech #developer",
+    "instagram": "#coding #programming #tech #developer #coder #devlife #programmer #computerscience"
+  }
+}

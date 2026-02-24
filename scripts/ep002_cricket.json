@@ -1,0 +1,67 @@
+{
+  "episode": "ep002_cricket",
+  "title": "Babar vs Virat explain APIs",
+  "characters": ["babar", "virat"],
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "virat",
+      "line": "Babar bhai, do you even know what an API is?",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 2,
+      "character": "babar",
+      "line": "Of course I do Virat. I've hit more APIs than you've hit centuries lately.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 3,
+      "character": "virat",
+      "line": "Very funny. Okay genius, explain it then.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 4,
+      "character": "babar",
+      "line": "An API is like a waiter at a restaurant. You tell the waiter what you want, he goes to the kitchen, brings back your food.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "virat",
+      "line": "That's actually not bad. The waiter is the middleman between you and the kitchen.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 6,
+      "character": "babar",
+      "line": "Exactly! Your app is you, the API is the waiter, and the server is the kitchen. You don't walk into the kitchen yourself.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "virat",
+      "line": "And the menu is like API documentation. It tells you what you can order.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 8,
+      "character": "babar",
+      "line": "See? Even a guy who can't play spin understands APIs.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "virat",
+      "line": "At least I show up in World Cup finals.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 10,
+      "character": "babar",
+      "line": "Okay okay, let's just focus on the code bhai.",
+      "pause_after_ms": 0
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "duo_name": "peter_stewie",
+  "char1": {
+    "name": "peter",
+    "display_name": "Peter Griffin",
+    "voice_id": "d75c270eaee14c8aa1e9e980cc37cf1b",
+    "image": "peter.png",
+    "subtitle_color": "&H00FFFF",
+    "position": {"x": 50, "y": 1350}
+  },
+  "char2": {
+    "name": "stewie",
+    "display_name": "Stewie Griffin",
+    "voice_id": "e91c4f5974f149478a35affe820d02ac",
+    "image": "stewie.png",
+    "subtitle_color": "&H5050FF",
+    "position": {"x": 700, "y": 1350}
+  }
+}

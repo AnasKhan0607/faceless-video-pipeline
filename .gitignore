@@ -1,0 +1,16 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Generated content
+audio/
+out/
+queue/
+completed/
+
+# OS
+.DS_Store
+
+# Secrets (API keys in config)
+config.local.json

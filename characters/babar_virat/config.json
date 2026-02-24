@@ -1,0 +1,19 @@
+{
+  "duo_name": "babar_virat",
+  "char1": {
+    "name": "babar",
+    "display_name": "Babar Azam",
+    "voice_id": "98ba6b7be2fe48d493e55b26e7c4b9dd",
+    "image": "char1.png",
+    "subtitle_color": "&H00FF00",
+    "position": {"x": 50, "y": 1350}
+  },
+  "char2": {
+    "name": "virat",
+    "display_name": "Virat Kohli",
+    "voice_id": "43e496790b8f4f9390a9ede0e7cc149b",
+    "image": "char2.png",
+    "subtitle_color": "&HFF7F00",
+    "position": {"x": 700, "y": 1350}
+  }
+}
