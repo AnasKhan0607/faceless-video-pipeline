@@ -365,12 +365,69 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None) -> bool:
                     }
                 ''')
             
+            # Wait for any confirmation popup to appear
+            time.sleep(3)
+            
+            # Immediately try to handle any popup that appeared after clicking Post
+            print("  → Checking for confirmation popups...")
+            try:
+                # Use JavaScript to find and click any Continue/confirm button in modals
+                page.evaluate('''
+                    // Find modal/popup containers
+                    const modals = document.querySelectorAll('[class*="Modal"], [class*="modal"], [class*="Dialog"], [class*="dialog"], [class*="TUXModal"]');
+                    for (const modal of modals) {
+                        // Look for buttons in modals
+                        const buttons = modal.querySelectorAll('button');
+                        for (const btn of buttons) {
+                            const text = btn.textContent.toLowerCase();
+                            // Click Continue, Post, or similar confirmation buttons
+                            if (text.includes('continue') || text.includes('post') || text.includes('confirm') || text.includes('yes')) {
+                                console.log('Clicking modal button:', btn.textContent);
+                                btn.click();
+                                break;
+                            }
+                        }
+                    }
+                    // Also try clicking any primary/red button that appeared
+                    const primaryBtns = document.querySelectorAll('button[class*="primary"], button[class*="danger"], button[class*="confirm"]');
+                    for (const btn of primaryBtns) {
+                        if (btn.offsetParent !== null) { // is visible
+                            console.log('Clicking primary button:', btn.textContent);
+                            btn.click();
+                            break;
+                        }
+                    }
+                ''')
+                time.sleep(2)
+            except Exception as e:
+                print(f"  Popup check error: {e}")
+            
             # Wait for post to complete (look for success indicators)
             print("  → Waiting for post confirmation...")
             success = False
             for check in range(90):  # Max 90 seconds for TikTok to process
                 time.sleep(1)
                 try:
+                    # Handle "Content may be restricted" popup - click Continue/Post anyway
+                    for continue_sel in [
+                        'button:has-text("Continue")',
+                        'button:has-text("Continue posting")',
+                        'button:has-text("Post anyway")',
+                        'button:has-text("Post now")',
+                        '[class*="TUXButton--primary"]',
+                        '[class*="confirm"] button',
+                        '[class*="modal"] button[class*="primary"]',
+                    ]:
+                        try:
+                            cont_btn = page.locator(continue_sel)
+                            if cont_btn.count() > 0 and cont_btn.first.is_visible():
+                                print(f"  ⚠️ Found confirmation popup - clicking {continue_sel}...")
+                                cont_btn.first.click(timeout=2000)
+                                time.sleep(1)
+                                break
+                        except:
+                            pass
+                    
                     page_content = page.content().lower()
                     current_url = page.url.lower()
                     
