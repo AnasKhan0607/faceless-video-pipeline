@@ -136,7 +136,7 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None) -> bool:
     
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=False)  # headless breaks TikTok
+            browser = p.chromium.launch(headless=False)  # Visible browser required for TikTok
             context = browser.new_context()
             
             # Add cookies
@@ -277,7 +277,27 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None) -> bool:
             
             # Extra buffer after checks pass (TikTok needs time to fully process)
             print("  → Extra buffer for TikTok processing...")
-            time.sleep(5)
+            time.sleep(3)
+            
+            # Handle "Content may be restricted" popup - click Continue if present
+            try:
+                continue_btn = page.locator('button:has-text("Continue")')
+                if continue_btn.count() > 0:
+                    print("  ⚠️ Content restriction warning - clicking Continue...")
+                    continue_btn.click(timeout=3000)
+                    time.sleep(2)
+            except:
+                pass
+            
+            # Handle "Content may be restricted" popup - click Continue if present
+            try:
+                continue_btn = page.locator('button:has-text("Continue")')
+                if continue_btn.count() > 0:
+                    print("  ⚠️ Content restriction warning - clicking Continue...")
+                    continue_btn.click(timeout=3000)
+                    time.sleep(2)
+            except:
+                pass
             
             # Take screenshot before clicking Post
             page.screenshot(path=str(debug_dir / "03b_before_post.png"))
@@ -371,6 +391,16 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None) -> bool:
             for check in range(90):  # Max 90 seconds for TikTok to process
                 time.sleep(1)
                 try:
+                    # Handle any "Continue" popups that appear (content warnings)
+                    try:
+                        continue_btn = page.locator('button:has-text("Continue")')
+                        if continue_btn.count() > 0 and continue_btn.is_visible():
+                            print("  ⚠️ Content warning popup - clicking Continue...")
+                            continue_btn.click(timeout=2000)
+                            time.sleep(1)
+                    except:
+                        pass
+                    
                     page_content = page.content().lower()
                     current_url = page.url.lower()
                     
