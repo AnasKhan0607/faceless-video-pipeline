@@ -1,0 +1,55 @@
+{
+  "episode": "ep003_api",
+  "title": "What is an API?",
+  "topic_image": "api.png",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Yo Stewie, what the heck is an API?",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Oh for heaven's sake Peter. An API is like a waiter at a restaurant.",
+      "pause_after_ms": 200
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "A waiter? What do you mean?",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "You tell the waiter what you want. The waiter goes to the kitchen and brings back your food.",
+      "pause_after_ms": 200
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "An API does the same thing but for computer programs. You ask for data, it fetches it for you.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 6,
+      "character": "peter",
+      "line": "Ohhh so when I check the weather on my phone...",
+      "pause_after_ms": 200
+    },
+    {
+      "id": 7,
+      "character": "stewie",
+      "line": "Exactly! Your phone asks a weather API for the forecast, and it sends the data back.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 8,
+      "character": "peter",
+      "line": "That's actually pretty cool. Follow for more tech explained simple!",
+      "pause_after_ms": 0
+    }
+  ]
+}

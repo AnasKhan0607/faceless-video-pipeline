@@ -8,9 +8,25 @@ audio/
 out/
 queue/
 completed/
+debug_screenshots/
 
 # OS
 .DS_Store
 
-# Secrets (API keys in config)
+# Secrets & Auth (DO NOT COMMIT)
 config.local.json
+*.json.secret
+tiktok_cookies.json
+instagram_session.json
+.youtube_token.json
+client_secrets.json
+
+# Partial downloads
+*.part
+*.ytdl
+
+# Temp backgrounds folder
+/backgrounds/
+
+# Large video files (provide your own)
+assets/backgrounds/*.mp4
