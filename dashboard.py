@@ -598,73 +598,377 @@ with tab3:
         st.info("No scripts found. Generate one with: `python auto_generate.py --count 1`")
 
 # ==================== TAB 4: ANALYTICS ====================
+# Performance tracking file
+PERFORMANCE_FILE = LOGS_DIR / "video_performance.json"
+
+def load_performance():
+    try:
+        if PERFORMANCE_FILE.exists():
+            return json.loads(PERFORMANCE_FILE.read_text())
+        return {}
+    except:
+        return {}
+
+def save_performance(data):
+    PERFORMANCE_FILE.write_text(json.dumps(data, indent=2))
+
 with tab6:
     st.subheader("📈 Analytics")
     
-    col1, col2 = st.columns(2)
+    # Analytics sub-tabs
+    analytics_tab1, analytics_tab2, analytics_tab3, analytics_tab4, analytics_tab5 = st.tabs([
+        "📊 Overview", "📱 TikTok", "▶️ YouTube", "⭐ Best Topics", "⏰ Best Times"
+    ])
     
-    with col1:
-        # Generation timeline
-        st.markdown("### Videos Per Day")
-        timeline_data = []
-        for script_path in SCRIPTS_DIR.glob("ep_*.json"):
-            try:
-                created = datetime.fromtimestamp(script_path.stat().st_mtime)
-                timeline_data.append({"date": created.date(), "count": 1})
-            except:
-                pass
+    # Load performance data
+    perf_data = load_performance()
+    
+    # ==================== OVERVIEW ====================
+    with analytics_tab1:
+        col1, col2 = st.columns(2)
         
-        if timeline_data:
-            df_timeline = pd.DataFrame(timeline_data)
-            df_grouped = df_timeline.groupby("date").sum().reset_index()
-            fig = px.bar(df_grouped, x="date", y="count", 
-                        labels={"date": "Date", "count": "Videos"})
-            fig.update_layout(height=300)
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("No data yet")
-    
-    with col2:
-        # Topics usage
-        st.markdown("### Topics Status")
-        try:
-            topics_data = json.loads(TOPICS_FILE.read_text())
-            topics = topics_data.get("topics", [])
-            used = sum(1 for t in topics if t.get("used"))
-            unused = len(topics) - used
+        with col1:
+            # Generation timeline
+            st.markdown("### Videos Per Day")
+            timeline_data = []
+            for script_path in SCRIPTS_DIR.glob("ep_*.json"):
+                try:
+                    created = datetime.fromtimestamp(script_path.stat().st_mtime)
+                    timeline_data.append({"date": created.date(), "count": 1})
+                except:
+                    pass
             
-            fig = go.Figure(data=[go.Pie(
-                labels=['Used', 'Available'],
-                values=[used, unused],
-                hole=.4,
-                marker_colors=['#ff6b6b', '#4ecdc4']
-            )])
-            fig.update_layout(height=300, margin=dict(t=0, b=0, l=0, r=0))
-            st.plotly_chart(fig, use_container_width=True)
-        except:
-            st.info("No topics data")
+            if timeline_data:
+                df_timeline = pd.DataFrame(timeline_data)
+                df_grouped = df_timeline.groupby("date").sum().reset_index()
+                fig = px.bar(df_grouped, x="date", y="count", 
+                            labels={"date": "Date", "count": "Videos"})
+                fig.update_layout(height=300)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("No data yet")
+        
+        with col2:
+            # Topics usage
+            st.markdown("### Topics Status")
+            try:
+                topics_data = json.loads(TOPICS_FILE.read_text())
+                topics = topics_data.get("topics", [])
+                used = sum(1 for t in topics if t.get("used"))
+                unused = len(topics) - used
+                
+                fig = go.Figure(data=[go.Pie(
+                    labels=['Used', 'Available'],
+                    values=[used, unused],
+                    hole=.4,
+                    marker_colors=['#ff6b6b', '#4ecdc4']
+                )])
+                fig.update_layout(height=300, margin=dict(t=0, b=0, l=0, r=0))
+                st.plotly_chart(fig, use_container_width=True)
+            except:
+                st.info("No topics data")
+        
+        # Platform links
+        st.markdown("### 🔗 View on Platforms")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.link_button("📱 TikTok Studio", "https://www.tiktok.com/tiktokstudio/content")
+        with col2:
+            st.link_button("▶️ YouTube Studio", "https://studio.youtube.com")
+        with col3:
+            st.link_button("📸 Instagram", "https://www.instagram.com")
     
-    # Upload history from debug screenshots
-    st.markdown("### 📤 Recent Upload Attempts")
-    if DEBUG_DIR.exists():
-        screenshots = sorted(DEBUG_DIR.glob("*.png"), key=lambda x: x.stat().st_mtime, reverse=True)[:4]
-        if screenshots:
-            cols = st.columns(4)
-            for i, ss in enumerate(screenshots):
-                with cols[i]:
-                    st.image(str(ss), caption=ss.name, use_container_width=True)
+    # ==================== TIKTOK ANALYTICS ====================
+    with analytics_tab2:
+        st.markdown("### 📱 TikTok Performance")
+        
+        tiktok_data = perf_data.get("tiktok", {})
+        
+        # Summary metrics
+        col1, col2, col3, col4 = st.columns(4)
+        total_views = sum(v.get("views", 0) for v in tiktok_data.values())
+        total_likes = sum(v.get("likes", 0) for v in tiktok_data.values())
+        total_shares = sum(v.get("shares", 0) for v in tiktok_data.values())
+        
+        with col1:
+            st.metric("Total Views", f"{total_views:,}")
+        with col2:
+            st.metric("Total Likes", f"{total_likes:,}")
+        with col3:
+            st.metric("Total Shares", f"{total_shares:,}")
+        with col4:
+            st.metric("Videos Tracked", len(tiktok_data))
+        
+        st.markdown("---")
+        
+        # Add/Update video stats
+        st.markdown("#### ➕ Track Video Performance")
+        st.info("Manually enter stats from TikTok Studio to track performance.")
+        
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            # Select video
+            video_options = {f"{v.stem}": str(v) for v in OUT_DIR.glob("*_final.mp4")}
+            if video_options:
+                selected_vid = st.selectbox("Select Video", list(video_options.keys()), key="tt_vid")
+        
+        with col2:
+            tiktok_url = st.text_input("TikTok URL (optional)", key="tt_url")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            tt_views = st.number_input("Views", min_value=0, value=0, key="tt_views")
+        with col2:
+            tt_likes = st.number_input("Likes", min_value=0, value=0, key="tt_likes")
+        with col3:
+            tt_shares = st.number_input("Shares", min_value=0, value=0, key="tt_shares")
+        with col4:
+            st.markdown("")
+            st.markdown("")
+            if st.button("💾 Save Stats", key="save_tt", use_container_width=True):
+                if video_options and selected_vid:
+                    tiktok_data[selected_vid] = {
+                        "views": tt_views,
+                        "likes": tt_likes,
+                        "shares": tt_shares,
+                        "url": tiktok_url,
+                        "updated": datetime.now().isoformat()
+                    }
+                    perf_data["tiktok"] = tiktok_data
+                    save_performance(perf_data)
+                    st.success("Stats saved!")
+                    st.rerun()
+        
+        # Show tracked videos
+        if tiktok_data:
+            st.markdown("---")
+            st.markdown("#### 📊 Tracked Videos")
+            
+            sorted_vids = sorted(tiktok_data.items(), key=lambda x: x[1].get("views", 0), reverse=True)
+            
+            for vid_name, stats in sorted_vids[:10]:
+                col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+                with col1:
+                    st.write(f"**{vid_name}**")
+                with col2:
+                    st.write(f"👀 {stats.get('views', 0):,}")
+                with col3:
+                    st.write(f"❤️ {stats.get('likes', 0):,}")
+                with col4:
+                    st.write(f"🔄 {stats.get('shares', 0):,}")
+    
+    # ==================== YOUTUBE ANALYTICS ====================
+    with analytics_tab3:
+        st.markdown("### ▶️ YouTube Performance")
+        
+        youtube_data = perf_data.get("youtube", {})
+        
+        # Summary metrics
+        col1, col2, col3, col4 = st.columns(4)
+        total_views = sum(v.get("views", 0) for v in youtube_data.values())
+        total_likes = sum(v.get("likes", 0) for v in youtube_data.values())
+        total_watch_hours = sum(v.get("watch_hours", 0) for v in youtube_data.values())
+        
+        with col1:
+            st.metric("Total Views", f"{total_views:,}")
+        with col2:
+            st.metric("Total Likes", f"{total_likes:,}")
+        with col3:
+            st.metric("Watch Hours", f"{total_watch_hours:.1f}")
+        with col4:
+            st.metric("Videos Tracked", len(youtube_data))
+        
+        st.markdown("---")
+        
+        # Add/Update video stats
+        st.markdown("#### ➕ Track Video Performance")
+        st.info("Manually enter stats from YouTube Studio to track performance.")
+        
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            video_options_yt = {f"{v.stem}": str(v) for v in OUT_DIR.glob("*_final.mp4")}
+            if video_options_yt:
+                selected_vid_yt = st.selectbox("Select Video", list(video_options_yt.keys()), key="yt_vid")
+        
+        with col2:
+            youtube_url = st.text_input("YouTube URL (optional)", key="yt_url")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            yt_views = st.number_input("Views", min_value=0, value=0, key="yt_views")
+        with col2:
+            yt_likes = st.number_input("Likes", min_value=0, value=0, key="yt_likes")
+        with col3:
+            yt_watch = st.number_input("Watch Hours", min_value=0.0, value=0.0, step=0.1, key="yt_watch")
+        with col4:
+            st.markdown("")
+            st.markdown("")
+            if st.button("💾 Save Stats", key="save_yt", use_container_width=True):
+                if video_options_yt and selected_vid_yt:
+                    youtube_data[selected_vid_yt] = {
+                        "views": yt_views,
+                        "likes": yt_likes,
+                        "watch_hours": yt_watch,
+                        "url": youtube_url,
+                        "updated": datetime.now().isoformat()
+                    }
+                    perf_data["youtube"] = youtube_data
+                    save_performance(perf_data)
+                    st.success("Stats saved!")
+                    st.rerun()
+        
+        # Show tracked videos
+        if youtube_data:
+            st.markdown("---")
+            st.markdown("#### 📊 Tracked Videos")
+            
+            sorted_vids = sorted(youtube_data.items(), key=lambda x: x[1].get("views", 0), reverse=True)
+            
+            for vid_name, stats in sorted_vids[:10]:
+                col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+                with col1:
+                    st.write(f"**{vid_name}**")
+                with col2:
+                    st.write(f"👀 {stats.get('views', 0):,}")
+                with col3:
+                    st.write(f"❤️ {stats.get('likes', 0):,}")
+                with col4:
+                    st.write(f"⏱️ {stats.get('watch_hours', 0):.1f}h")
+    
+    # ==================== BEST TOPICS ====================
+    with analytics_tab4:
+        st.markdown("### ⭐ Best Performing Topics")
+        
+        # Combine TikTok and YouTube data to find best topics
+        all_perf = {}
+        
+        for vid_name, stats in perf_data.get("tiktok", {}).items():
+            if vid_name not in all_perf:
+                all_perf[vid_name] = {"tiktok_views": 0, "youtube_views": 0, "total": 0}
+            all_perf[vid_name]["tiktok_views"] = stats.get("views", 0)
+            all_perf[vid_name]["total"] += stats.get("views", 0)
+        
+        for vid_name, stats in perf_data.get("youtube", {}).items():
+            if vid_name not in all_perf:
+                all_perf[vid_name] = {"tiktok_views": 0, "youtube_views": 0, "total": 0}
+            all_perf[vid_name]["youtube_views"] = stats.get("views", 0)
+            all_perf[vid_name]["total"] += stats.get("views", 0)
+        
+        if all_perf:
+            # Get topic names from scripts
+            for vid_name in all_perf:
+                ep_id = "_".join(vid_name.split("_")[:2])
+                script_files = list(SCRIPTS_DIR.glob(f"{ep_id}*.json"))
+                if script_files:
+                    try:
+                        script = json.loads(script_files[0].read_text())
+                        all_perf[vid_name]["topic"] = script.get("topic", vid_name)
+                    except:
+                        all_perf[vid_name]["topic"] = vid_name
+                else:
+                    all_perf[vid_name]["topic"] = vid_name
+            
+            # Sort by total views
+            sorted_topics = sorted(all_perf.items(), key=lambda x: x[1]["total"], reverse=True)
+            
+            st.markdown("#### 🏆 Top Performing Videos")
+            
+            for i, (vid_name, data) in enumerate(sorted_topics[:10], 1):
+                medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
+                
+                col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+                with col1:
+                    st.write(f"{medal} **{data.get('topic', vid_name)[:50]}**")
+                with col2:
+                    st.write(f"📱 {data['tiktok_views']:,}")
+                with col3:
+                    st.write(f"▶️ {data['youtube_views']:,}")
+                with col4:
+                    st.write(f"**Total: {data['total']:,}**")
+            
+            # Chart
+            if len(sorted_topics) >= 3:
+                st.markdown("---")
+                chart_data = pd.DataFrame([
+                    {"Topic": data.get("topic", name)[:30], "Views": data["total"]}
+                    for name, data in sorted_topics[:10]
+                ])
+                fig = px.bar(chart_data, x="Topic", y="Views", title="Top 10 Videos by Views")
+                fig.update_layout(xaxis_tickangle=-45, height=400)
+                st.plotly_chart(fig, use_container_width=True)
         else:
-            st.info("No upload screenshots yet")
+            st.info("No performance data yet. Track some videos in TikTok/YouTube tabs first!")
     
-    # Platform links
-    st.markdown("### 🔗 View on Platforms")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.link_button("📱 TikTok Studio", "https://www.tiktok.com/tiktokstudio/content")
-    with col2:
-        st.link_button("▶️ YouTube Studio", "https://studio.youtube.com")
-    with col3:
-        st.link_button("📸 Instagram", "https://www.instagram.com")
+    # ==================== BEST TIMES ====================
+    with analytics_tab5:
+        st.markdown("### ⏰ Posting Time Analysis")
+        
+        st.info("""
+        Track when your videos perform best to optimize posting schedule.
+        Add posting times when you track video performance.
+        """)
+        
+        # Analyze posting times from tracked videos
+        time_performance = {}
+        
+        for vid_name, stats in {**perf_data.get("tiktok", {}), **perf_data.get("youtube", {})}.items():
+            # Try to get posting time from video creation
+            ep_id = "_".join(vid_name.split("_")[:2])
+            script_files = list(SCRIPTS_DIR.glob(f"{ep_id}*.json"))
+            if script_files:
+                try:
+                    created = datetime.fromtimestamp(script_files[0].stat().st_mtime)
+                    hour = created.hour
+                    
+                    if hour not in time_performance:
+                        time_performance[hour] = {"views": 0, "count": 0}
+                    
+                    time_performance[hour]["views"] += stats.get("views", 0)
+                    time_performance[hour]["count"] += 1
+                except:
+                    pass
+        
+        if time_performance:
+            st.markdown("#### 📊 Performance by Hour")
+            
+            # Create chart data
+            chart_data = []
+            for hour in range(24):
+                data = time_performance.get(hour, {"views": 0, "count": 0})
+                avg_views = data["views"] / data["count"] if data["count"] > 0 else 0
+                chart_data.append({
+                    "Hour": f"{hour:02d}:00",
+                    "Avg Views": avg_views,
+                    "Videos": data["count"]
+                })
+            
+            df = pd.DataFrame(chart_data)
+            
+            fig = px.bar(df, x="Hour", y="Avg Views", title="Average Views by Posting Hour")
+            fig.update_layout(height=400)
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Best times
+            best_hours = sorted(time_performance.items(), key=lambda x: x[1]["views"]/max(x[1]["count"], 1), reverse=True)[:3]
+            
+            if best_hours:
+                st.markdown("#### 🏆 Best Posting Times")
+                for hour, data in best_hours:
+                    avg = data["views"] / data["count"] if data["count"] > 0 else 0
+                    st.write(f"• **{hour:02d}:00** - Avg {avg:,.0f} views ({data['count']} videos)")
+        else:
+            st.info("Track some video performance to see posting time analysis.")
+        
+        st.markdown("---")
+        st.markdown("#### 💡 General Best Practices")
+        st.markdown("""
+        Based on general social media research:
+        - **TikTok:** 7-9 AM, 12-3 PM, 7-9 PM (local time)
+        - **YouTube Shorts:** 12-3 PM, 7-9 PM
+        - **Instagram Reels:** 11 AM - 1 PM, 7-9 PM
+        
+        Track your own data to find what works best for your audience!
+        """)
     
     st.markdown("---")
     
