@@ -62,7 +62,7 @@ st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 st.markdown("---")
 
 # ==================== TABS ====================
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Overview", "📹 Videos", "📈 Analytics", "💰 Costs", "⚙️ Settings"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📊 Overview", "📹 Videos", "📝 Scripts", "📈 Analytics", "💰 Costs", "⚙️ Settings"])
 
 # ==================== TAB 1: OVERVIEW ====================
 with tab1:
@@ -254,8 +254,93 @@ with tab2:
         else:
             st.info("No videos generated yet. Run `python auto_generate.py --count 1`")
 
-# ==================== TAB 3: ANALYTICS ====================
+# ==================== TAB 3: SCRIPTS ====================
 with tab3:
+    st.subheader("📝 Script Library")
+    
+    # Get all scripts
+    all_scripts = []
+    for script_path in sorted(SCRIPTS_DIR.glob("ep_*.json"), reverse=True):
+        try:
+            script = json.loads(script_path.read_text())
+            video_files = list(OUT_DIR.glob(f"{script_path.stem}*.mp4"))
+            all_scripts.append({
+                "path": script_path,
+                "ep_id": script_path.stem,
+                "topic": script.get("topic", "Unknown"),
+                "character_duo": script.get("character_duo", "Unknown"),
+                "lines": script.get("lines", []),
+                "created": datetime.fromtimestamp(script_path.stat().st_mtime),
+                "rendered": len(video_files) > 0
+            })
+        except:
+            pass
+    
+    if all_scripts:
+        # Filter options
+        col1, col2, col3 = st.columns([2, 1, 1])
+        with col1:
+            search = st.text_input("🔍 Search topics", "")
+        with col2:
+            filter_rendered = st.selectbox("Status", ["All", "Rendered", "Not Rendered"])
+        with col3:
+            sort_by = st.selectbox("Sort", ["Newest", "Oldest"])
+        
+        # Apply filters
+        filtered = all_scripts
+        if search:
+            filtered = [s for s in filtered if search.lower() in s["topic"].lower()]
+        if filter_rendered == "Rendered":
+            filtered = [s for s in filtered if s["rendered"]]
+        elif filter_rendered == "Not Rendered":
+            filtered = [s for s in filtered if not s["rendered"]]
+        if sort_by == "Oldest":
+            filtered = list(reversed(filtered))
+        
+        st.markdown(f"**Showing {len(filtered)} scripts**")
+        st.markdown("---")
+        
+        # Script list with preview
+        for script in filtered:
+            with st.expander(f"{'✅' if script['rendered'] else '⏳'} **{script['topic']}** ({script['ep_id']})"):
+                col1, col2 = st.columns([3, 1])
+                
+                with col1:
+                    st.markdown(f"**Character Duo:** {script['character_duo']}")
+                    st.markdown(f"**Created:** {script['created'].strftime('%Y-%m-%d %H:%M')}")
+                    st.markdown(f"**Lines:** {len(script['lines'])}")
+                    
+                    st.markdown("---")
+                    st.markdown("**📜 Full Script:**")
+                    
+                    for i, line in enumerate(script['lines']):
+                        character = line.get('character', 'Unknown')
+                        text = line.get('text', '')
+                        st.markdown(f"**{character}:** {text}")
+                
+                with col2:
+                    # Actions
+                    st.markdown("**Actions:**")
+                    
+                    if script['rendered']:
+                        st.success("✅ Rendered")
+                    else:
+                        st.warning("⏳ Not rendered")
+                        st.code(f"python pipeline_v2.py --script {script['path'].name}")
+                    
+                    # Raw JSON view
+                    with st.expander("📄 Raw JSON"):
+                        st.json(json.loads(script['path'].read_text()))
+                    
+                    # Estimated duration
+                    word_count = sum(len(line.get('text', '').split()) for line in script['lines'])
+                    est_duration = word_count / 2.5  # ~2.5 words per second
+                    st.write(f"⏱️ Est. duration: {est_duration:.0f}s")
+    else:
+        st.info("No scripts found. Generate one with: `python auto_generate.py --count 1`")
+
+# ==================== TAB 4: ANALYTICS ====================
+with tab6:
     st.subheader("📈 Analytics")
     
     col1, col2 = st.columns(2)
@@ -323,8 +408,8 @@ with tab3:
     with col3:
         st.link_button("📸 Instagram", "https://www.instagram.com")
 
-# ==================== TAB 4: COSTS ====================
-with tab4:
+# ==================== TAB 5: COSTS ====================
+with tab6:
     st.subheader("💰 Cost Tracking")
     
     num_videos = len(videos)
@@ -382,8 +467,8 @@ with tab4:
             fig.update_layout(height=300)
             st.plotly_chart(fig, use_container_width=True)
 
-# ==================== TAB 5: SETTINGS ====================
-with tab5:
+# ==================== TAB 6: SETTINGS ====================
+with tab6:
     st.subheader("⚙️ Settings & Tools")
     
     col1, col2 = st.columns(2)
