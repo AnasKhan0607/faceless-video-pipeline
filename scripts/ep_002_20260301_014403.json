@@ -1,0 +1,64 @@
+{
+  "episode": "ep_002_20260301_014403",
+  "title": "Recursion with the Griffins",
+  "topic": "What is recursion",
+  "duo": "peter_stewie",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Hey Stewie, what the heck is recursion?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Ah, Peter, recursion is like looking in a mirror with another mirror.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "So, it's endless reflections of... me?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "Precisely! But less terrifying in calculations.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "peter",
+      "line": "Like ordering fries and they keep giving more!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "Yes, but infinitely filling and never fattening.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "I\u2019ll take that over a mirror any day!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Typical Peter, solving complex problems with fast food.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "Well, I like my solutions extra crispy!",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-01T01:44:03.685862"
+}

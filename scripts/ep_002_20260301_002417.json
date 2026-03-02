@@ -1,0 +1,70 @@
+{
+  "episode": "ep_002_20260301_002417",
+  "title": "Peter & Stewie's Recursive Adventure",
+  "topic": "What is recursion",
+  "duo": "peter_stewie",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Hey Stewie, what's recursion? Is that like recycling?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "No, Peter. Recursion is when something calls itself.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "Like when I answer my own questions?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "Precisely, but on purpose, unlike your conversations.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 5,
+      "character": "peter",
+      "line": "So, it's like an infinite loop?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "Exactly, unless you find an exit. Like a bathroom line at a concert.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "Ah, so you end it before running out of... 'memory'?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Yes, Peter, unlike your weekend BBQ stories.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "Great, now I'm hungry!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "And I'm stuck in an infinite loop of your appetite.",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-01T00:24:17.990616"
+}

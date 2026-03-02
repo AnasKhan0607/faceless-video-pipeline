@@ -1,0 +1,65 @@
+{
+  "episode": "ep_010_20260301_100011",
+  "title": "Peter and Stewie in the Cloud",
+  "topic": "What is the cloud",
+  "duo": "peter_stewie",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Hey Stewie, what's this cloud everyone's talking about?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Think of it like a giant, invisible library in the sky.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 3,
+      "character": "stewie",
+      "line": "But technically, it's a network of remote servers storing data online.",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "These servers are managed by data centers worldwide.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "It lets you access files on the internet, not just your computer.",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 6,
+      "character": "peter",
+      "line": "So, like how I can stream 'Die Hard' anywhere?",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 7,
+      "character": "stewie",
+      "line": "Precisely, but also for photos, apps, even businesses.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "peter",
+      "line": "So, no rain in this cloud then?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "stewie",
+      "line": "Only if you upload water balloons, Peter.",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-01T10:00:11.955900",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_010_20260301_100011.png"
+}

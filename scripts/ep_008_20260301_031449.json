@@ -1,0 +1,71 @@
+{
+  "episode": "ep_008_20260301_031449",
+  "title": "Peter Meets the Pull Request",
+  "topic": "What is a pull request",
+  "duo": "peter_stewie",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Hey Stewie, what's a pull request?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Think of it as asking the chef to taste your new sauce.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "So it's like adding toppings to a pizza?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "Close! It's a way to propose changes to a code repository.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "You suggest changes, others review them before adding to main code.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "Prevents disasters, like anchovies on a chocolate pizza.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "Oh, so it keeps the code tasty?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Exactly. Keeps everything deliciously stable.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "I should do pull requests with my diet!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "Yes, let\u2019s review those cookie decisions, shall we?",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-01T03:14:49.655881",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_008_20260301_031449.png"
+}

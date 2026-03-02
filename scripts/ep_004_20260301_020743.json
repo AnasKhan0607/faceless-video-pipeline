@@ -1,0 +1,71 @@
+{
+  "episode": "ep_004_20260301_020743",
+  "title": "Peter and Stewie Decode REST vs. GraphQL",
+  "topic": "What is REST vs GraphQL",
+  "duo": "peter_stewie",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's REST and GraphQL? Some kind of new food?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Oh, Peter! Imagine REST like a buffet, GraphQL like a custom order.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "So, one is all-you-can-eat, other is a la carte?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "Precisely! REST gives fixed data, no matter your request.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "While GraphQL lets you ask for exactly what you need.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "peter",
+      "line": "Hmm, so more control with GraphQL, right?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "stewie",
+      "line": "Exactly! Like customizing a pizza with just your favorite toppings.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Developers use GraphQL for efficiency, less data, and fewer requests.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "Sounds like I'll stick to buffets, but developers like the control!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "Yes, Peter. Stick to what you know best - eating!",
+      "pause_after_ms": 400
+    }
+  ],
+  "generated_at": "2026-03-01T02:07:47.060066",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_004_20260301_020743.png"
+}

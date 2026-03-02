@@ -1,0 +1,71 @@
+{
+  "episode": "ep_005_20260301_021122",
+  "title": "Docker Explained by the Griffins",
+  "topic": "What is Docker",
+  "duo": "peter_stewie",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Hey Stewie, what even is Docker?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Think of Docker like a shipping container for software.",
+      "pause_after_ms": 350
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "Does it float on the ocean of the internet?",
+      "pause_after_ms": 450
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "No, Peter. It packages up code and dependencies together.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "This way, it runs reliably across different environments.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "peter",
+      "line": "So, it's like ensuring your spaghetti tastes the same anywhere?",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 7,
+      "character": "stewie",
+      "line": "Exactly! Developers use it to streamline their workflows.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "No more 'works on my machine' excuses.",
+      "pause_after_ms": 350
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "I could use a Docker for my dinner recipes!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "Yes, and we could seal away your culinary disasters!",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-01T02:11:22.054973",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_005_20260301_021122.png"
+}

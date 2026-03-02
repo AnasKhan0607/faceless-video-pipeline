@@ -1,0 +1,71 @@
+{
+  "episode": "ep_009_20260301_032957",
+  "title": "Peter and Stewie's CI/CD Crash Course",
+  "topic": "What is CI/CD",
+  "duo": "peter_stewie",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Hey Stewie, what\u2019s all this CI/CD jazz everyone\u2019s buzzing about?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Think of it like a well-oiled pizza assembly line, Peter.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "Oh, I\u2019m listening! Does it come with extra pepperoni?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "CI/CD stands for Continuous Integration and Continuous Deployment.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "It automates building, testing, and deploying software.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "Developers integrate code frequently; improvements get delivered faster.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "So, like getting pizza to my mouth faster! Got it.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Precisely, Peter. Companies like Netflix use it to update features quickly.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "Does it come with extra pepperoni, though?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "Only if you integrate it properly, you doughy simpleton.",
+      "pause_after_ms": 400
+    }
+  ],
+  "generated_at": "2026-03-01T03:29:58.046069",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_009_20260301_032957.png"
+}

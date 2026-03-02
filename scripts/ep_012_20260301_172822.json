@@ -1,0 +1,77 @@
+{
+  "episode": "ep_012_20260301_172822",
+  "title": "Peter & Stewie: Microservice Madness",
+  "topic": "What is a microservice",
+  "duo": "elon_zuck",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's this microservice thing everyone\u2019s buzzing about?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Think of microservices like a buffet, Peter.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "stewie",
+      "line": "Instead of one big dish, you have small, specialized options.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "peter",
+      "line": "Sounds tasty! But how does that help my apps?",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "Each microservice is an independent, focused function in an application.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "They talk to each other via APIs to build the big picture.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "So, it's like teamwork for computer programs?",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Exactly, Peter. Netflix uses them to manage their streaming.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "stewie",
+      "line": "They scale easily and improve reliability.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 10,
+      "character": "peter",
+      "line": "Oh, like when I binge-watch and nothing crashes!",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 11,
+      "character": "stewie",
+      "line": "Precisely. Now, pass me the remote, genius.",
+      "pause_after_ms": 300
+    }
+  ],
+  "generated_at": "2026-03-01T17:28:22.622457",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_012_20260301_172822.png"
+}

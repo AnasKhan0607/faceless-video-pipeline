@@ -19,7 +19,7 @@ import httpx
 from pathlib import Path
 
 # === CONFIG ===
-FISH_API_KEY = "40288fd705db4ac08078d3d908687ba9"
+FISH_API_KEY = os.environ.get("FISH_API_KEY", "")
 FISH_VOICES = {
     # Cartoon characters
     "peter": "d75c270eaee14c8aa1e9e980cc37cf1b",
@@ -47,7 +47,7 @@ FISH_VOICES = {
     "virat": "43e496790b8f4f9390a9ede0e7cc149b",
 }
 
-DEEPGRAM_KEY = os.environ.get("DEEPGRAM_API_KEY", "abb2368e3cde6038043254bba1d5364bd94b8166")
+DEEPGRAM_KEY = os.environ.get("DEEPGRAM_API_KEY", "")
 
 BASE_DIR = Path(__file__).parent
 ASSETS_DIR = BASE_DIR / "assets"
@@ -424,7 +424,29 @@ def composite_video_v2(script: dict, timeline: list, audio_path: Path, subs_path
     return output_path
 
 
+def check_api_keys():
+    """Validate required API keys are set."""
+    missing = []
+    if not FISH_API_KEY:
+        missing.append("FISH_API_KEY")
+    if not DEEPGRAM_KEY:
+        missing.append("DEEPGRAM_API_KEY")
+    
+    if missing:
+        print("❌ Missing required API keys:")
+        for key in missing:
+            print(f"   - {key}")
+        print("\nSet them in your environment or .env file:")
+        print("   export FISH_API_KEY='your_key_here'")
+        print("   export DEEPGRAM_API_KEY='your_key_here'")
+        print("\nOr copy .env.example to .env and fill in your keys.")
+        exit(1)
+
+
 def main():
+    # Check API keys first
+    check_api_keys()
+    
     parser = argparse.ArgumentParser(description="TikTok Video Pipeline v2 - FullStackPeter Style")
     parser.add_argument("--script", required=True, help="Path to script JSON")
     args = parser.parse_args()

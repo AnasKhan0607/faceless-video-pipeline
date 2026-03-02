@@ -1,0 +1,82 @@
+{
+  "episode": "ep_000_20260301_002432",
+  "title": "Recursion with the Griffins",
+  "topic": "What is recursion",
+  "duo": "peter_stewie",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Hey Stewie, what's recursion?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Ah, Peter, recursion is defining something in terms of itself.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "Like when I try to lose weight by eating pizza?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "More like when you ask if the chicken or egg came first.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "peter",
+      "line": "So, like a never-ending story?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "Exactly, but with no annoying theme song.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "Ah, got it. Recursive like my love for donuts.",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Precisely, just less calories, more logic!",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "So, recursion is just fun math snacks?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "If it helps you sleep at night, yes, Peter.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 11,
+      "character": "peter",
+      "line": "Recursive, like my attempts at being smart!",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 12,
+      "character": "stewie",
+      "line": "Ah, spoken like a true recursive genius.",
+      "pause_after_ms": 300
+    }
+  ],
+  "generated_at": "2026-03-01T00:24:32.368588"
+}

@@ -1,0 +1,77 @@
+{
+  "episode": "ep_006_20260301_022247",
+  "title": "Peter & Stewie Decode Kubernetes!",
+  "topic": "What is Kubernetes",
+  "duo": "peter_stewie",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Hey Stewie, what's this Kubernetes thing? Is it food?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Oh, Peter, Kubernetes isn't an appetizer. Think of it as a maestro!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "A maestro? You mean it conducts an orchestra?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "Exactly! Kubernetes orchestrates your applications across many computers.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "It's a system for automating deployment and scaling.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "Kubernetes manages containerized applications, keeping them running smoothly.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "Oh, like when Lois schedules our family dinners?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Precisely! It ensures everyone gets their meal at the right time.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "stewie",
+      "line": "Big companies use Kubernetes for reliability in their services.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "peter",
+      "line": "Ah, so no one ends up with just mashed potatoes?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 11,
+      "character": "stewie",
+      "line": "Exactly, Peter. Everyone gets a full plate. Even you!",
+      "pause_after_ms": 400
+    }
+  ],
+  "generated_at": "2026-03-01T02:22:47.680621",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_006_20260301_022247.png"
+}
