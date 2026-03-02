@@ -623,7 +623,7 @@ with tab6:
 with tab7:
     st.subheader("⚙️ Settings & Tools")
     
-    settings_tab1, settings_tab2, settings_tab3, settings_tab4 = st.tabs(["💡 Topic Editor", "🎭 Characters", "🎮 Backgrounds", "🛠️ Commands"])
+    settings_tab1, settings_tab2, settings_tab3, settings_tab4, settings_tab5 = st.tabs(["💡 Topic Editor", "🎭 Characters", "🎮 Backgrounds", "📢 Notifications", "🛠️ Commands"])
     
     # ==================== TOPIC EDITOR ====================
     with settings_tab1:
@@ -826,8 +826,109 @@ with tab7:
         
         st.info("To add backgrounds: place MP4 files in `backgrounds/` folder")
     
-    # ==================== COMMANDS ====================
+    # ==================== NOTIFICATIONS ====================
     with settings_tab4:
+        st.markdown("### 📢 Discord Notifications")
+        
+        st.markdown("""
+        Get notified on Discord when videos are generated or uploads succeed/fail.
+        
+        **Setup:**
+        1. Go to your Discord server → Server Settings → Integrations → Webhooks
+        2. Create a new webhook and copy the URL
+        3. Paste it below
+        """)
+        
+        # Load current webhook
+        webhook_config = load_dashboard_config()
+        current_webhook = webhook_config.get("discord_webhook_url", "")
+        
+        # Webhook input
+        webhook_url = st.text_input(
+            "Discord Webhook URL",
+            value=current_webhook,
+            type="password",
+            placeholder="https://discord.com/api/webhooks/..."
+        )
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("💾 Save Webhook", use_container_width=True):
+                if webhook_url:
+                    webhook_config["discord_webhook_url"] = webhook_url
+                    save_dashboard_config(webhook_config)
+                    st.success("Webhook saved!")
+                else:
+                    # Remove webhook
+                    webhook_config.pop("discord_webhook_url", None)
+                    save_dashboard_config(webhook_config)
+                    st.info("Webhook removed")
+        
+        with col2:
+            if st.button("🧪 Test Notification", use_container_width=True):
+                if webhook_url:
+                    # Test the webhook
+                    try:
+                        import httpx
+                        test_payload = {
+                            "embeds": [{
+                                "title": "🧪 Test Notification",
+                                "description": "Discord notifications are working!",
+                                "color": 0x2ecc71,
+                                "footer": {"text": "Video Pipeline"}
+                            }]
+                        }
+                        response = httpx.post(webhook_url, json=test_payload, timeout=10)
+                        if response.status_code == 204:
+                            st.success("Test notification sent! Check Discord.")
+                        else:
+                            st.error(f"Failed: HTTP {response.status_code}")
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+                else:
+                    st.warning("Enter a webhook URL first")
+        
+        st.markdown("---")
+        st.markdown("### Notification Events")
+        
+        # Notification toggles
+        notify_config = webhook_config.get("notifications", {
+            "on_video_generated": True,
+            "on_upload_success": True,
+            "on_upload_failed": True,
+            "daily_summary": False
+        })
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            notify_config["on_video_generated"] = st.checkbox(
+                "🎬 Video Generated",
+                value=notify_config.get("on_video_generated", True)
+            )
+            notify_config["on_upload_success"] = st.checkbox(
+                "✅ Upload Success",
+                value=notify_config.get("on_upload_success", True)
+            )
+        
+        with col2:
+            notify_config["on_upload_failed"] = st.checkbox(
+                "❌ Upload Failed",
+                value=notify_config.get("on_upload_failed", True)
+            )
+            notify_config["daily_summary"] = st.checkbox(
+                "📊 Daily Summary",
+                value=notify_config.get("daily_summary", False)
+            )
+        
+        # Save notification settings
+        if notify_config != webhook_config.get("notifications", {}):
+            webhook_config["notifications"] = notify_config
+            save_dashboard_config(webhook_config)
+    
+    # ==================== COMMANDS ====================
+    with settings_tab5:
         st.markdown("### 🛠️ Quick Commands")
         st.code("""
 # Generate 1 video + upload
