@@ -141,6 +141,10 @@ with tab1:
 with tab2:
     st.subheader("📹 Video Library")
     
+    # View mode toggle
+    view_mode = st.radio("View Mode", ["🎬 Grid", "▶️ Player"], horizontal=True)
+    st.markdown("---")
+    
     # Get all videos with their data
     video_cards = []
     for script_path in sorted(SCRIPTS_DIR.glob("ep_*.json"), reverse=True):
@@ -164,34 +168,91 @@ with tab2:
         except:
             pass
     
-    # Display video grid
-    if video_cards:
-        for i in range(0, len(video_cards), 3):
-            cols = st.columns(3)
-            for j, col in enumerate(cols):
-                if i + j < len(video_cards):
-                    video = video_cards[i + j]
-                    with col:
-                        # Thumbnail
-                        if video["thumbnail_path"] and video["thumbnail_path"].exists():
-                            st.image(str(video["thumbnail_path"]), use_container_width=True)
-                        else:
-                            st.image("https://via.placeholder.com/300x400/333/fff?text=No+Thumbnail", use_container_width=True)
+    if view_mode == "▶️ Player":
+        # Video Player Mode
+        if video_cards:
+            # Video selector
+            video_options = {f"{v['ep_id']} - {v['topic'][:50]}": i for i, v in enumerate(video_cards) if v['video_path']}
+            
+            if video_options:
+                selected = st.selectbox("Select Video", list(video_options.keys()))
+                selected_video = video_cards[video_options[selected]]
+                
+                col1, col2 = st.columns([2, 1])
+                
+                with col1:
+                    # Video player
+                    st.markdown(f"### {selected_video['topic']}")
+                    if selected_video['video_path'] and selected_video['video_path'].exists():
+                        st.video(str(selected_video['video_path']))
                         
-                        st.markdown(f"**{video['title'][:40]}...**" if len(video['title']) > 40 else f"**{video['title']}**")
-                        st.caption(f"📅 {video['created'].strftime('%b %d, %H:%M')}")
-                        st.caption(f"💡 {video['topic']}")
-                        
-                        # Video status
-                        if video["video_path"]:
-                            size_mb = video["video_path"].stat().st_size / (1024 * 1024)
-                            st.success(f"✅ Rendered ({size_mb:.1f} MB)")
-                        else:
-                            st.warning("⏳ Not rendered")
-                        
-                        st.markdown("---")
+                        # Download button
+                        with open(selected_video['video_path'], 'rb') as f:
+                            st.download_button(
+                                label="⬇️ Download Video",
+                                data=f,
+                                file_name=selected_video['video_path'].name,
+                                mime="video/mp4"
+                            )
+                    else:
+                        st.error("Video file not found")
+                
+                with col2:
+                    # Video info
+                    st.markdown("### 📋 Info")
+                    if selected_video['video_path']:
+                        size_mb = selected_video['video_path'].stat().st_size / (1024 * 1024)
+                        st.write(f"**Size:** {size_mb:.1f} MB")
+                    st.write(f"**Created:** {selected_video['created'].strftime('%Y-%m-%d %H:%M')}")
+                    st.write(f"**Episode:** {selected_video['ep_id']}")
+                    
+                    # Thumbnail
+                    if selected_video['thumbnail_path'] and selected_video['thumbnail_path'].exists():
+                        st.markdown("### 🖼️ Thumbnail")
+                        st.image(str(selected_video['thumbnail_path']), use_container_width=True)
+                    
+                    # Script preview
+                    st.markdown("### 📝 Script")
+                    with st.expander("View Script"):
+                        for i, line in enumerate(selected_video['script'].get('lines', [])):
+                            st.write(f"**{line.get('character', 'Unknown')}:** {line.get('text', '')}")
+            else:
+                st.info("No rendered videos yet. Generate some videos first!")
+        else:
+            st.info("No videos generated yet. Run `python auto_generate.py --count 1`")
+    
     else:
-        st.info("No videos generated yet. Run `python auto_generate.py --count 1`")
+        # Grid Mode (original)
+        if video_cards:
+            for i in range(0, len(video_cards), 3):
+                cols = st.columns(3)
+                for j, col in enumerate(cols):
+                    if i + j < len(video_cards):
+                        video = video_cards[i + j]
+                        with col:
+                            # Thumbnail
+                            if video["thumbnail_path"] and video["thumbnail_path"].exists():
+                                st.image(str(video["thumbnail_path"]), use_container_width=True)
+                            else:
+                                st.image("https://via.placeholder.com/300x400/333/fff?text=No+Thumbnail", use_container_width=True)
+                            
+                            st.markdown(f"**{video['title'][:40]}...**" if len(video['title']) > 40 else f"**{video['title']}**")
+                            st.caption(f"📅 {video['created'].strftime('%b %d, %H:%M')}")
+                            st.caption(f"💡 {video['topic']}")
+                            
+                            # Video status
+                            if video["video_path"]:
+                                size_mb = video["video_path"].stat().st_size / (1024 * 1024)
+                                st.success(f"✅ Rendered ({size_mb:.1f} MB)")
+                                # Play button in expander
+                                with st.expander("▶️ Play"):
+                                    st.video(str(video["video_path"]))
+                            else:
+                                st.warning("⏳ Not rendered")
+                            
+                            st.markdown("---")
+        else:
+            st.info("No videos generated yet. Run `python auto_generate.py --count 1`")
 
 # ==================== TAB 3: ANALYTICS ====================
 with tab3:
