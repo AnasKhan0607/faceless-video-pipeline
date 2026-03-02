@@ -1007,7 +1007,7 @@ with tab6:
 with tab7:
     st.subheader("⚙️ Settings & Tools")
     
-    settings_tab1, settings_tab2, settings_tab3, settings_tab4, settings_tab5 = st.tabs(["💡 Topic Editor", "🎭 Characters", "🎮 Backgrounds", "📢 Notifications", "🛠️ Commands"])
+    settings_tab1, settings_tab2, settings_tab3, settings_tab4, settings_tab5, settings_tab6 = st.tabs(["💡 Topic Editor", "🎭 Characters", "🎮 Backgrounds", "📢 Notifications", "⏰ Schedule", "🛠️ Commands"])
     
     # ==================== TOPIC EDITOR ====================
     with settings_tab1:
@@ -1410,8 +1410,109 @@ with tab7:
             webhook_config["notifications"] = notify_config
             save_dashboard_config(webhook_config)
     
-    # ==================== COMMANDS ====================
+    # ==================== SCHEDULE ====================
     with settings_tab5:
+        st.markdown("### ⏰ Posting Schedule")
+        
+        st.markdown("""
+        Configure when videos are automatically generated and uploaded.
+        These settings are saved to `dashboard_config.json` and read by cron jobs.
+        """)
+        
+        # Load schedule config
+        schedule_config = load_dashboard_config()
+        schedules = schedule_config.get("schedules", [
+            {"name": "Morning Post", "time": "10:00", "enabled": True, "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]},
+            {"name": "Evening Post", "time": "18:00", "enabled": True, "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]}
+        ])
+        
+        st.markdown("---")
+        
+        # Edit existing schedules
+        st.markdown("#### 📅 Scheduled Posts")
+        
+        updated_schedules = []
+        for i, sched in enumerate(schedules):
+            with st.expander(f"{'✅' if sched.get('enabled') else '⏸️'} {sched.get('name', f'Schedule {i+1}')} - {sched.get('time', '12:00')}"):
+                col1, col2, col3 = st.columns([2, 1, 1])
+                
+                with col1:
+                    name = st.text_input("Name", value=sched.get("name", ""), key=f"sched_name_{i}")
+                
+                with col2:
+                    time = st.time_input(
+                        "Time",
+                        value=datetime.strptime(sched.get("time", "12:00"), "%H:%M").time(),
+                        key=f"sched_time_{i}"
+                    )
+                
+                with col3:
+                    enabled = st.checkbox("Enabled", value=sched.get("enabled", True), key=f"sched_enabled_{i}")
+                
+                # Days of week
+                days = st.multiselect(
+                    "Days",
+                    ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+                    default=sched.get("days", ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]),
+                    key=f"sched_days_{i}"
+                )
+                
+                # Actions
+                col1, col2 = st.columns(2)
+                with col2:
+                    if st.button("🗑️ Delete", key=f"del_sched_{i}"):
+                        # Don't add to updated list
+                        continue
+                
+                updated_schedules.append({
+                    "name": name,
+                    "time": time.strftime("%H:%M"),
+                    "enabled": enabled,
+                    "days": days
+                })
+        
+        # Add new schedule
+        st.markdown("---")
+        st.markdown("#### ➕ Add New Schedule")
+        
+        col1, col2, col3 = st.columns([2, 1, 1])
+        with col1:
+            new_name = st.text_input("Schedule Name", placeholder="Afternoon Post")
+        with col2:
+            new_time = st.time_input("Time", value=datetime.strptime("14:00", "%H:%M").time())
+        with col3:
+            st.markdown("")
+            st.markdown("")
+            if st.button("➕ Add Schedule", use_container_width=True):
+                if new_name:
+                    updated_schedules.append({
+                        "name": new_name,
+                        "time": new_time.strftime("%H:%M"),
+                        "enabled": True,
+                        "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+                    })
+        
+        # Save if changed
+        if updated_schedules != schedules:
+            schedule_config["schedules"] = updated_schedules
+            save_dashboard_config(schedule_config)
+            st.success("Schedule saved!")
+        
+        st.markdown("---")
+        st.markdown("#### 📋 Cron Job Reference")
+        st.info("""
+        **Note:** These settings configure the desired schedule. 
+        The actual cron jobs are managed by OpenClaw.
+        
+        Current cron jobs:
+        - Morning: `4eb50692-08b8-4a1d-9553-36aa7c176897`
+        - Evening: `9409fc7c-70f5-49a4-91b2-cb2899bdb258`
+        
+        To update cron times, ask KhanAI to modify the cron jobs.
+        """)
+    
+    # ==================== COMMANDS ====================
+    with settings_tab6:
         st.markdown("### 🛠️ Quick Commands")
         st.code("""
 # Generate 1 video + upload
