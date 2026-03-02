@@ -499,6 +499,80 @@ with tab6:
         st.link_button("▶️ YouTube Studio", "https://studio.youtube.com")
     with col3:
         st.link_button("📸 Instagram", "https://www.instagram.com")
+    
+    st.markdown("---")
+    
+    # Daily Summary History
+    st.markdown("### 📊 Daily Summaries")
+    
+    SUMMARY_HISTORY_FILE = LOGS_DIR / "summary_history.json"
+    
+    col1, col2 = st.columns([3, 1])
+    
+    with col2:
+        if st.button("📊 Generate Today's Summary", use_container_width=True):
+            try:
+                import subprocess
+                import sys
+                result = subprocess.run(
+                    [sys.executable, "daily_summary.py"],
+                    cwd=str(PIPELINE_DIR),
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+                if result.returncode == 0:
+                    st.success("Summary generated!")
+                    st.rerun()
+                else:
+                    st.error("Failed to generate summary")
+            except Exception as e:
+                st.error(f"Error: {e}")
+    
+    # Load history
+    try:
+        if SUMMARY_HISTORY_FILE.exists():
+            history = json.loads(SUMMARY_HISTORY_FILE.read_text())
+            history = sorted(history, key=lambda x: x.get("date", ""), reverse=True)
+        else:
+            history = []
+    except:
+        history = []
+    
+    if history:
+        # Show recent summaries
+        for summary in history[:7]:  # Last 7 days
+            date = summary.get("date", "Unknown")
+            videos = summary.get("videos_generated", 0)
+            errors = summary.get("errors", 0)
+            cost = summary.get("cost", 0)
+            
+            status = "✅" if errors == 0 else "⚠️"
+            
+            with st.expander(f"{status} **{date}** - {videos} videos, ${cost:.2f}"):
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Videos", videos)
+                with col2:
+                    st.metric("Errors", errors)
+                with col3:
+                    st.metric("Cost", f"${cost:.2f}")
+                with col4:
+                    uploads = summary.get("uploads", {})
+                    total_uploads = sum(uploads.values())
+                    st.metric("Uploads", total_uploads)
+                
+                if summary.get("videos"):
+                    st.markdown("**Topics:**")
+                    for v in summary["videos"][:5]:
+                        st.write(f"• {v.get('topic', 'Unknown')}")
+                
+                if summary.get("error_breakdown"):
+                    st.markdown("**Error Breakdown:**")
+                    for err_type, count in summary["error_breakdown"].items():
+                        st.write(f"• {err_type}: {count}")
+    else:
+        st.info("No daily summaries yet. Click 'Generate Today's Summary' to create one.")
 
 # ==================== TAB 5: COSTS ====================
 with tab6:
