@@ -905,13 +905,112 @@ with tab7:
     
     # ==================== BACKGROUNDS ====================
     with settings_tab3:
-        st.markdown("### 🎮 Backgrounds")
-        backgrounds = list(BACKGROUNDS_DIR.glob("*.mp4"))
-        for bg in backgrounds:
-            size_mb = bg.stat().st_size / (1024 * 1024)
-            st.write(f"• **{bg.stem}** ({size_mb:.1f} MB)")
+        st.markdown("### 🎮 Background Manager")
         
-        st.info("To add backgrounds: place MP4 files in `backgrounds/` folder")
+        # Ensure backgrounds directory exists
+        BACKGROUNDS_DIR.mkdir(exist_ok=True)
+        
+        backgrounds = list(BACKGROUNDS_DIR.glob("*.mp4"))
+        
+        # Stats
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Backgrounds", len(backgrounds))
+        with col2:
+            total_size = sum(bg.stat().st_size for bg in backgrounds) / (1024 * 1024)
+            st.metric("Total Size", f"{total_size:.1f} MB")
+        with col3:
+            # Load config for active backgrounds
+            bg_config = load_dashboard_config()
+            active_bgs = bg_config.get("active_backgrounds", [bg.name for bg in backgrounds])
+            st.metric("Active", len([b for b in active_bgs if (BACKGROUNDS_DIR / b).exists()]))
+        
+        st.markdown("---")
+        
+        # Upload new background
+        st.markdown("#### ⬆️ Upload New Background")
+        uploaded_file = st.file_uploader(
+            "Upload MP4 video",
+            type=["mp4"],
+            help="Upload gameplay footage (Subway Surfers, Minecraft, etc.)"
+        )
+        
+        if uploaded_file:
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                # Custom filename
+                custom_name = st.text_input(
+                    "Filename (optional)",
+                    value=uploaded_file.name.replace(".mp4", ""),
+                    help="Leave empty to use original filename"
+                )
+            with col2:
+                st.markdown("")
+                st.markdown("")
+                if st.button("💾 Save Background", use_container_width=True):
+                    # Save the file
+                    filename = f"{custom_name or uploaded_file.name.replace('.mp4', '')}.mp4"
+                    save_path = BACKGROUNDS_DIR / filename
+                    
+                    if save_path.exists():
+                        st.error(f"File {filename} already exists!")
+                    else:
+                        with open(save_path, "wb") as f:
+                            f.write(uploaded_file.getbuffer())
+                        st.success(f"Saved: {filename}")
+                        st.rerun()
+        
+        st.markdown("---")
+        
+        # List backgrounds with controls
+        st.markdown("#### 📁 Available Backgrounds")
+        
+        if backgrounds:
+            for bg in sorted(backgrounds, key=lambda x: x.name):
+                col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+                
+                size_mb = bg.stat().st_size / (1024 * 1024)
+                is_active = bg.name in active_bgs
+                
+                with col1:
+                    status = "✅" if is_active else "⏸️"
+                    st.write(f"{status} **{bg.stem}** ({size_mb:.1f} MB)")
+                
+                with col2:
+                    # Toggle active status
+                    if is_active:
+                        if st.button("⏸️ Disable", key=f"disable_{bg.name}"):
+                            active_bgs = [b for b in active_bgs if b != bg.name]
+                            bg_config["active_backgrounds"] = active_bgs
+                            save_dashboard_config(bg_config)
+                            st.rerun()
+                    else:
+                        if st.button("✅ Enable", key=f"enable_{bg.name}"):
+                            active_bgs.append(bg.name)
+                            bg_config["active_backgrounds"] = active_bgs
+                            save_dashboard_config(bg_config)
+                            st.rerun()
+                
+                with col3:
+                    # Preview (just show file info for now)
+                    with st.expander("ℹ️"):
+                        st.write(f"**Path:** {bg}")
+                        st.write(f"**Size:** {size_mb:.1f} MB")
+                        modified = datetime.fromtimestamp(bg.stat().st_mtime)
+                        st.write(f"**Modified:** {modified.strftime('%Y-%m-%d %H:%M')}")
+                
+                with col4:
+                    # Delete button
+                    if st.button("🗑️", key=f"del_bg_{bg.name}"):
+                        bg.unlink()
+                        # Remove from active list
+                        active_bgs = [b for b in active_bgs if b != bg.name]
+                        bg_config["active_backgrounds"] = active_bgs
+                        save_dashboard_config(bg_config)
+                        st.success(f"Deleted: {bg.name}")
+                        st.rerun()
+        else:
+            st.info("No backgrounds found. Upload some MP4 files above!")
     
     # ==================== NOTIFICATIONS ====================
     with settings_tab4:
