@@ -467,11 +467,23 @@ with tab6:
             fig.update_layout(height=300)
             st.plotly_chart(fig, use_container_width=True)
 
+# Config file for storing selected character duo
+CONFIG_FILE = PIPELINE_DIR / "dashboard_config.json"
+
+def load_dashboard_config():
+    try:
+        return json.loads(CONFIG_FILE.read_text())
+    except:
+        return {"selected_character_duo": "peter_stewie"}
+
+def save_dashboard_config(config):
+    CONFIG_FILE.write_text(json.dumps(config, indent=2))
+
 # ==================== TAB 6: SETTINGS ====================
 with tab6:
     st.subheader("⚙️ Settings & Tools")
     
-    settings_tab1, settings_tab2, settings_tab3 = st.tabs(["💡 Topic Editor", "🎮 Backgrounds", "🛠️ Commands"])
+    settings_tab1, settings_tab2, settings_tab3, settings_tab4 = st.tabs(["💡 Topic Editor", "🎭 Characters", "🎮 Backgrounds", "🛠️ Commands"])
     
     # ==================== TOPIC EDITOR ====================
     with settings_tab1:
@@ -581,8 +593,91 @@ with tab6:
                     st.success(f"Deleted topic")
                     st.rerun()
     
-    # ==================== BACKGROUNDS ====================
+    # ==================== CHARACTERS ====================
     with settings_tab2:
+        st.markdown("### 🎭 Character Duos")
+        
+        # Get all character duos
+        CHARACTERS_DIR = PIPELINE_DIR / "characters"
+        character_duos = []
+        
+        for duo_dir in CHARACTERS_DIR.iterdir():
+            if duo_dir.is_dir() and not duo_dir.name.startswith('.'):
+                config_file = duo_dir / "config.json"
+                if config_file.exists():
+                    try:
+                        config = json.loads(config_file.read_text())
+                        char1_img = duo_dir / config.get("char1", {}).get("image", "char1.png")
+                        char2_img = duo_dir / config.get("char2", {}).get("image", "char2.png")
+                        character_duos.append({
+                            "name": duo_dir.name,
+                            "display_name": config.get("display_name", duo_dir.name.replace("_", " ").title()),
+                            "config": config,
+                            "dir": duo_dir,
+                            "char1_name": config.get("char1", {}).get("display_name", "Character 1"),
+                            "char2_name": config.get("char2", {}).get("display_name", "Character 2"),
+                            "char1_img": char1_img if char1_img.exists() else None,
+                            "char2_img": char2_img if char2_img.exists() else None
+                        })
+                    except:
+                        pass
+        
+        if character_duos:
+            # Load current config
+            dashboard_config = load_dashboard_config()
+            current_duo = dashboard_config.get("selected_character_duo", "peter_stewie")
+            
+            st.markdown("#### Select Default Character Duo")
+            
+            # Character duo selector
+            duo_names = [d["name"] for d in character_duos]
+            duo_display = {d["name"]: f"{d['display_name']} ({d['char1_name']} & {d['char2_name']})" for d in character_duos}
+            
+            selected = st.selectbox(
+                "Default duo for new videos",
+                duo_names,
+                index=duo_names.index(current_duo) if current_duo in duo_names else 0,
+                format_func=lambda x: duo_display.get(x, x)
+            )
+            
+            if selected != current_duo:
+                dashboard_config["selected_character_duo"] = selected
+                save_dashboard_config(dashboard_config)
+                st.success(f"Default character duo set to: {duo_display[selected]}")
+            
+            st.markdown("---")
+            st.markdown("#### Available Duos")
+            
+            # Display character duos
+            for duo in character_duos:
+                is_selected = duo["name"] == selected
+                status = "✅ Selected" if is_selected else ""
+                
+                with st.expander(f"{'⭐ ' if is_selected else ''}{duo['display_name']} {status}"):
+                    col1, col2, col3 = st.columns([1, 1, 2])
+                    
+                    with col1:
+                        st.markdown(f"**{duo['char1_name']}**")
+                        if duo["char1_img"]:
+                            st.image(str(duo["char1_img"]), width=150)
+                        else:
+                            st.info("No image")
+                    
+                    with col2:
+                        st.markdown(f"**{duo['char2_name']}**")
+                        if duo["char2_img"]:
+                            st.image(str(duo["char2_img"]), width=150)
+                        else:
+                            st.info("No image")
+                    
+                    with col3:
+                        st.markdown("**Config:**")
+                        st.json(duo["config"])
+        else:
+            st.info("No character duos found. Add them to `characters/` folder.")
+    
+    # ==================== BACKGROUNDS ====================
+    with settings_tab3:
         st.markdown("### 🎮 Backgrounds")
         backgrounds = list(BACKGROUNDS_DIR.glob("*.mp4"))
         for bg in backgrounds:
@@ -592,7 +687,7 @@ with tab6:
         st.info("To add backgrounds: place MP4 files in `backgrounds/` folder")
     
     # ==================== COMMANDS ====================
-    with settings_tab3:
+    with settings_tab4:
         st.markdown("### 🛠️ Quick Commands")
         st.code("""
 # Generate 1 video + upload
