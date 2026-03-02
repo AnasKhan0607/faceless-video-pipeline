@@ -46,25 +46,223 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS
+# Custom CSS for modern UI
 st.markdown("""
 <style>
-    .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 20px;
-        border-radius: 10px;
-        color: white;
+    /* Import Google Font */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    /* Global styles */
+    .stApp {
+        font-family: 'Inter', sans-serif;
     }
-    .video-thumbnail {
+    
+    /* Main header styling */
+    .main-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    .main-header h1 {
+        color: white;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .main-header p {
+        color: rgba(255,255,255,0.8);
+        margin: 0.5rem 0 0 0;
+    }
+    
+    /* Card styling */
+    .metric-card {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+    
+    /* Status badges */
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    
+    .status-success {
+        background: rgba(46, 204, 113, 0.2);
+        color: #2ecc71;
+        border: 1px solid rgba(46, 204, 113, 0.3);
+    }
+    
+    .status-warning {
+        background: rgba(241, 196, 15, 0.2);
+        color: #f1c40f;
+        border: 1px solid rgba(241, 196, 15, 0.3);
+    }
+    
+    .status-error {
+        background: rgba(231, 76, 60, 0.2);
+        color: #e74c3c;
+        border: 1px solid rgba(231, 76, 60, 0.3);
+    }
+    
+    /* Tab styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background: rgba(255,255,255,0.05);
+        padding: 0.5rem;
+        border-radius: 12px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
         border-radius: 8px;
-        border: 2px solid #333;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    /* Button styling */
+    .stButton > button {
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+    }
+    
+    /* Input styling */
+    .stTextInput > div > div > input,
+    .stSelectbox > div > div > div,
+    .stNumberInput > div > div > input {
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.05);
+    }
+    
+    /* Expander styling */
+    .streamlit-expanderHeader {
+        background: rgba(255,255,255,0.05);
+        border-radius: 8px;
+        font-weight: 500;
+    }
+    
+    /* Metric styling */
+    [data-testid="stMetricValue"] {
+        font-size: 2rem;
+        font-weight: 700;
+    }
+    
+    [data-testid="stMetricLabel"] {
+        font-weight: 500;
+        opacity: 0.8;
+    }
+    
+    /* Video thumbnail styling */
+    .video-thumbnail {
+        border-radius: 12px;
+        border: 2px solid rgba(255,255,255,0.1);
+        overflow: hidden;
+        transition: transform 0.2s ease;
+    }
+    
+    .video-thumbnail:hover {
+        transform: scale(1.02);
+    }
+    
+    /* Dataframe styling */
+    .stDataFrame {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    /* Alert/Info box styling */
+    .stAlert {
+        border-radius: 12px;
+        border: none;
+    }
+    
+    /* Progress indicator */
+    .stProgress > div > div {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+    }
+    
+    /* Divider */
+    hr {
+        border: none;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        margin: 2rem 0;
+    }
+    
+    /* Code block styling */
+    .stCodeBlock {
+        border-radius: 12px;
+    }
+    
+    /* Sidebar if used */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    }
+    
+    /* Hide Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: rgba(255,255,255,0.05);
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.2);
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255,255,255,0.3);
     }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🎬 Video Pipeline Dashboard")
-st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-st.markdown("---")
+# Header
+st.markdown("""
+<div class="main-header">
+    <h1>🎬 Video Pipeline</h1>
+    <p>Automated content generation for TikTok, YouTube & Instagram</p>
+</div>
+""", unsafe_allow_html=True)
 
 # ==================== TABS ====================
 tab1, tab2, tab2b, tab3, tab4, tab5, tab6, tab7 = st.tabs(["📊 Overview", "📹 Videos", "📋 Queue", "📝 Scripts", "📈 Analytics", "💰 Costs", "🚨 Logs", "⚙️ Settings"])
