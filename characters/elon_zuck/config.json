@@ -1,0 +1,16 @@
+{
+  "duo_name": "elon_zuck",
+  "display_name": "Elon & Zuckerberg",
+  "char1": {
+    "name": "elon",
+    "display_name": "Elon",
+    "voice_id": "elon",
+    "image": "elon.png"
+  },
+  "char2": {
+    "name": "zuckerberg",
+    "display_name": "Zuckerberg",
+    "voice_id": "zuckerberg", 
+    "image": "zuckerberg.png"
+  }
+}

@@ -57,22 +57,26 @@
     {
       "id": 10,
       "topic": "What is the cloud",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-01T10:00:48.632542"
     },
     {
       "id": 11,
       "topic": "What is AWS vs Azure vs GCP",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-01T10:01:53.178670"
     },
     {
       "id": 12,
       "topic": "What is a microservice",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-01T17:31:59.913905"
     },
     {
       "id": 13,
       "topic": "What is a monolith",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-01T18:00:45.143205"
     },
     {
       "id": 14,

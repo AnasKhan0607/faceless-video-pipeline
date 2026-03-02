@@ -1,0 +1,77 @@
+{
+  "episode": "ep_013_20260301_180009",
+  "title": "Monoliths Explained by Peter & Stewie",
+  "topic": "What is a monolith",
+  "duo": "peter_stewie",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Hey Stewie, what's a monolith?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Think of it like a giant Lego block.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "stewie",
+      "line": "A monolith is a single, self-contained system.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "It means all parts are interconnected in one unit.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "peter",
+      "line": "Like a big spaghetti of code?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "Exactly! A monolith can be complex to manage.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "stewie",
+      "line": "You change one part, and it affects everything.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "peter",
+      "line": "So, why bother using them?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "stewie",
+      "line": "They\u2019re simple to deploy and good for small projects.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "Imagine using a monolith to run our TV show!",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 11,
+      "character": "peter",
+      "line": "Great, more tangled than my hair!",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-01T18:00:09.747379",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_013_20260301_180009.png"
+}

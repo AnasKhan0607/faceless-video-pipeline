@@ -15,7 +15,7 @@ import httpx
 from pathlib import Path
 
 # === CONFIG ===
-FISH_API_KEY = "40288fd705db4ac08078d3d908687ba9"
+FISH_API_KEY = os.environ.get("FISH_API_KEY", "")
 FISH_VOICES = {
     "peter": "d75c270eaee14c8aa1e9e980cc37cf1b",
     "stewie": "e91c4f5974f149478a35affe820d02ac",
@@ -35,7 +35,7 @@ CHAR_POSITIONS = {
     "virat": {"x": 700, "y": 1350, "file": "virat.png"},
 }
 
-DEEPGRAM_KEY = os.environ.get("DEEPGRAM_API_KEY", "abb2368e3cde6038043254bba1d5364bd94b8166")
+DEEPGRAM_KEY = os.environ.get("DEEPGRAM_API_KEY", "")
 
 BASE_DIR = Path(__file__).parent
 ASSETS_DIR = BASE_DIR / "assets"

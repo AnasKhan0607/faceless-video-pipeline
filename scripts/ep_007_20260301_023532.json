@@ -1,0 +1,83 @@
+{
+  "episode": "ep_007_20260301_023532",
+  "title": "Peter and Stewie Explain Git with Grit!",
+  "topic": "What is Git",
+  "duo": "peter_stewie",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "What's this Git thing I keep hearing about?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Think of it as a time machine for your code, Peter.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 3,
+      "character": "stewie",
+      "line": "It tracks changes like storing each draft of a novel.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "peter",
+      "line": "So it remembers all the bad ideas too?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "Exactly, Git manages versions of your work.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "It's a distributed version control system.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "stewie",
+      "line": "It helps multiple people work on the same project.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "peter",
+      "line": "Like when you and I argue over who\u2019s the best Griffin?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "stewie",
+      "line": "More like managing our debates, but less shouting.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "Developers use it to track progress and collaborate.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 11,
+      "character": "peter",
+      "line": "Does it come with a babysitter too?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 12,
+      "character": "stewie",
+      "line": "If only, Peter. If only.",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-01T02:35:32.280135",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_007_20260301_023532.png"
+}

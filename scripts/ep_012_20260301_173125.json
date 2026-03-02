@@ -1,0 +1,77 @@
+{
+  "episode": "ep_012_20260301_173125",
+  "title": "Microservices Explained by Elon & Zuck",
+  "topic": "What is a microservice",
+  "duo": "elon_zuck",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "elon",
+      "line": "Mark, what's a microservice anyway?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "zuckerberg",
+      "line": "Imagine your app as a pizza, Elon.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "zuckerberg",
+      "line": "Each slice is a microservice doing a specific job.",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 4,
+      "character": "elon",
+      "line": "So each slice can be a different topping?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "zuckerberg",
+      "line": "Exactly! Microservices are like tiny, independent programs.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 6,
+      "character": "zuckerberg",
+      "line": "They perform specific tasks and communicate over a network.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "elon",
+      "line": "Why bother with that complexity?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "zuckerberg",
+      "line": "It allows for flexibility and easier updates!",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 9,
+      "character": "zuckerberg",
+      "line": "Amazon uses them to manage their huge web services.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "elon",
+      "line": "So it's like upgrading just one pizza slice?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 11,
+      "character": "zuckerberg",
+      "line": "Precisely! And no one likes cold pizza.",
+      "pause_after_ms": 300
+    }
+  ],
+  "generated_at": "2026-03-01T17:31:25.169829",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_012_20260301_173125.png"
+}
