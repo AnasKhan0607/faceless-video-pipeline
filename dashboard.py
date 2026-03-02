@@ -647,138 +647,195 @@ def save_dashboard_config(config):
 
 # ==================== TAB 6: LOGS ====================
 with tab6:
-    st.subheader("🚨 Error Logs & Debug")
+    st.subheader("🚨 Logs & Debug")
     
-    # Helper functions for error logging
-    def load_error_log():
-        try:
-            if ERROR_LOG_FILE.exists():
-                return json.loads(ERROR_LOG_FILE.read_text())
-            return []
-        except:
-            return []
+    # Live log file path
+    LIVE_LOG_FILE = LOGS_DIR / "pipeline.log"
     
-    def save_error_log(errors):
-        ERROR_LOG_FILE.write_text(json.dumps(errors, indent=2))
+    # Sub-tabs for different log views
+    log_tab1, log_tab2, log_tab3 = st.tabs(["📺 Live Output", "🚨 Errors", "📸 Screenshots"])
     
-    def add_error(error_type, message, details=None):
-        errors = load_error_log()
-        errors.append({
-            "timestamp": datetime.now().isoformat(),
-            "type": error_type,
-            "message": message,
-            "details": details or {}
-        })
-        save_error_log(errors)
-    
-    # Load errors
-    errors = load_error_log()
-    
-    # Stats
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Total Errors", len(errors))
-    with col2:
-        upload_errors = len([e for e in errors if "upload" in e.get("type", "").lower()])
-        st.metric("Upload Errors", upload_errors)
-    with col3:
-        recent_errors = len([e for e in errors if datetime.fromisoformat(e.get("timestamp", "2000-01-01")) > datetime.now() - timedelta(days=1)])
-        st.metric("Last 24h", recent_errors)
-    
-    st.markdown("---")
-    
-    # Debug screenshots
-    st.markdown("### 📸 Debug Screenshots")
-    if DEBUG_DIR.exists():
-        screenshots = sorted(DEBUG_DIR.glob("*.png"), key=lambda x: x.stat().st_mtime, reverse=True)
-        if screenshots:
-            # Group by date
-            today_ss = [s for s in screenshots if datetime.fromtimestamp(s.stat().st_mtime).date() == datetime.now().date()]
-            older_ss = [s for s in screenshots if datetime.fromtimestamp(s.stat().st_mtime).date() != datetime.now().date()]
-            
-            if today_ss:
-                st.markdown("#### Today")
-                cols = st.columns(min(4, len(today_ss)))
-                for i, ss in enumerate(today_ss[:4]):
-                    with cols[i]:
-                        st.image(str(ss), caption=ss.name, use_container_width=True)
-                        st.caption(datetime.fromtimestamp(ss.stat().st_mtime).strftime("%H:%M:%S"))
-            
-            if older_ss:
-                with st.expander(f"Older Screenshots ({len(older_ss)})"):
-                    cols = st.columns(4)
-                    for i, ss in enumerate(older_ss[:8]):
-                        with cols[i % 4]:
-                            st.image(str(ss), caption=ss.name, use_container_width=True)
-        else:
-            st.info("No debug screenshots yet")
-    else:
-        st.info("Debug directory not found")
-    
-    st.markdown("---")
-    
-    # Error log viewer
-    st.markdown("### 📋 Error Log")
-    
-    if errors:
-        # Filter
-        col1, col2 = st.columns(2)
-        with col1:
-            error_filter = st.selectbox("Filter by type", ["All"] + list(set(e.get("type", "unknown") for e in errors)))
+    # ==================== LIVE OUTPUT ====================
+    with log_tab1:
+        st.markdown("### 📺 Live Pipeline Output")
+        
+        col1, col2 = st.columns([3, 1])
+        
         with col2:
-            time_filter = st.selectbox("Time range", ["All Time", "Last 24h", "Last 7 days"])
+            auto_refresh = st.checkbox("Auto-refresh (5s)", value=False)
+            if st.button("🔄 Refresh", use_container_width=True):
+                st.rerun()
+            if st.button("🗑️ Clear Log", use_container_width=True):
+                if LIVE_LOG_FILE.exists():
+                    LIVE_LOG_FILE.write_text("")
+                st.success("Log cleared!")
+                st.rerun()
         
-        # Apply filters
-        filtered_errors = errors
-        if error_filter != "All":
-            filtered_errors = [e for e in filtered_errors if e.get("type") == error_filter]
-        if time_filter == "Last 24h":
-            filtered_errors = [e for e in filtered_errors if datetime.fromisoformat(e.get("timestamp", "2000-01-01")) > datetime.now() - timedelta(days=1)]
-        elif time_filter == "Last 7 days":
-            filtered_errors = [e for e in filtered_errors if datetime.fromisoformat(e.get("timestamp", "2000-01-01")) > datetime.now() - timedelta(days=7)]
-        
-        # Sort by newest first
-        filtered_errors = sorted(filtered_errors, key=lambda x: x.get("timestamp", ""), reverse=True)
-        
-        st.markdown(f"**Showing {len(filtered_errors)} errors**")
-        
-        for error in filtered_errors[:20]:  # Limit to 20
-            timestamp = datetime.fromisoformat(error.get("timestamp", "")).strftime("%Y-%m-%d %H:%M:%S")
-            error_type = error.get("type", "unknown")
-            message = error.get("message", "No message")
-            
-            with st.expander(f"🔴 [{error_type}] {timestamp} - {message[:50]}..."):
-                st.write(f"**Type:** {error_type}")
-                st.write(f"**Time:** {timestamp}")
-                st.write(f"**Message:** {message}")
-                if error.get("details"):
-                    st.markdown("**Details:**")
-                    st.json(error.get("details"))
-        
-        # Clear errors button
-        st.markdown("---")
-        if st.button("🗑️ Clear All Errors", type="secondary"):
-            save_error_log([])
-            st.success("Errors cleared!")
+        # Auto-refresh using st.empty and time
+        if auto_refresh:
+            import time
+            st.info("Auto-refreshing every 5 seconds...")
+            time.sleep(5)
             st.rerun()
-    else:
-        st.success("✅ No errors logged!")
-        st.info("Errors from upload scripts will appear here. You can also manually add errors for testing.")
+        
+        # Read and display log
+        if LIVE_LOG_FILE.exists():
+            log_content = LIVE_LOG_FILE.read_text()
+            if log_content.strip():
+                # Show last 100 lines
+                lines = log_content.strip().split('\n')
+                recent_lines = lines[-100:]
+                
+                st.code('\n'.join(recent_lines), language="text")
+                
+                st.caption(f"Showing last {len(recent_lines)} of {len(lines)} lines")
+            else:
+                st.info("Log is empty. Start a video generation to see output here.")
+        else:
+            st.info("No log file yet. Pipeline output will appear here when generation runs.")
+        
+        st.markdown("---")
+        st.markdown("**Tip:** Run pipeline with logging:")
+        st.code(f"python auto_generate.py --count 1 2>&1 | tee {LIVE_LOG_FILE}")
     
-    # Manual error entry (for testing)
-    with st.expander("➕ Add Test Error"):
-        test_type = st.text_input("Error Type", "upload_tiktok")
-        test_message = st.text_input("Message", "Test error message")
-        if st.button("Add Error"):
+    # ==================== ERRORS ====================
+    with log_tab2:
+        st.markdown("### 🚨 Error Log")
+        
+        # Helper functions for error logging
+        def load_error_log():
+            try:
+                if ERROR_LOG_FILE.exists():
+                    return json.loads(ERROR_LOG_FILE.read_text())
+                return []
+            except:
+                return []
+        
+        def save_error_log(errors):
+            ERROR_LOG_FILE.write_text(json.dumps(errors, indent=2))
+        
+        def add_error(error_type, message, details=None):
+            errors = load_error_log()
             errors.append({
                 "timestamp": datetime.now().isoformat(),
-                "type": test_type,
-                "message": test_message,
-                "details": {"manual": True}
+                "type": error_type,
+                "message": message,
+                "details": details or {}
             })
             save_error_log(errors)
-            st.success("Error added!")
-            st.rerun()
+    
+        # Load errors
+        errors = load_error_log()
+        
+        # Stats
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Errors", len(errors))
+        with col2:
+            upload_errors = len([e for e in errors if "upload" in e.get("type", "").lower()])
+            st.metric("Upload Errors", upload_errors)
+        with col3:
+            recent_errors = len([e for e in errors if datetime.fromisoformat(e.get("timestamp", "2000-01-01")) > datetime.now() - timedelta(days=1)])
+            st.metric("Last 24h", recent_errors)
+        
+        st.markdown("---")
+        
+        if errors:
+            # Filter
+            col1, col2 = st.columns(2)
+            with col1:
+                error_filter = st.selectbox("Filter by type", ["All"] + list(set(e.get("type", "unknown") for e in errors)))
+            with col2:
+                time_filter = st.selectbox("Time range", ["All Time", "Last 24h", "Last 7 days"])
+            
+            # Apply filters
+            filtered_errors = errors
+            if error_filter != "All":
+                filtered_errors = [e for e in filtered_errors if e.get("type") == error_filter]
+            if time_filter == "Last 24h":
+                filtered_errors = [e for e in filtered_errors if datetime.fromisoformat(e.get("timestamp", "2000-01-01")) > datetime.now() - timedelta(days=1)]
+            elif time_filter == "Last 7 days":
+                filtered_errors = [e for e in filtered_errors if datetime.fromisoformat(e.get("timestamp", "2000-01-01")) > datetime.now() - timedelta(days=7)]
+            
+            # Sort by newest first
+            filtered_errors = sorted(filtered_errors, key=lambda x: x.get("timestamp", ""), reverse=True)
+            
+            st.markdown(f"**Showing {len(filtered_errors)} errors**")
+            
+            for error in filtered_errors[:20]:  # Limit to 20
+                timestamp = datetime.fromisoformat(error.get("timestamp", "")).strftime("%Y-%m-%d %H:%M:%S")
+                error_type = error.get("type", "unknown")
+                message = error.get("message", "No message")
+                
+                with st.expander(f"🔴 [{error_type}] {timestamp} - {message[:50]}..."):
+                    st.write(f"**Type:** {error_type}")
+                    st.write(f"**Time:** {timestamp}")
+                    st.write(f"**Message:** {message}")
+                    if error.get("details"):
+                        st.markdown("**Details:**")
+                        st.json(error.get("details"))
+            
+            # Clear errors button
+            st.markdown("---")
+            if st.button("🗑️ Clear All Errors", type="secondary"):
+                save_error_log([])
+                st.success("Errors cleared!")
+                st.rerun()
+        else:
+            st.success("✅ No errors logged!")
+            st.info("Errors from upload scripts will appear here. You can also manually add errors for testing.")
+        
+        # Manual error entry (for testing)
+        with st.expander("➕ Add Test Error"):
+            test_type = st.text_input("Error Type", "upload_tiktok")
+            test_message = st.text_input("Message", "Test error message")
+            if st.button("Add Error"):
+                errors.append({
+                    "timestamp": datetime.now().isoformat(),
+                    "type": test_type,
+                    "message": test_message,
+                    "details": {"manual": True}
+                })
+                save_error_log(errors)
+                st.success("Error added!")
+                st.rerun()
+    
+    # ==================== SCREENSHOTS ====================
+    with log_tab3:
+        st.markdown("### 📸 Debug Screenshots")
+        if DEBUG_DIR.exists():
+            screenshots = sorted(DEBUG_DIR.glob("*.png"), key=lambda x: x.stat().st_mtime, reverse=True)
+            if screenshots:
+                # Group by date
+                today_ss = [s for s in screenshots if datetime.fromtimestamp(s.stat().st_mtime).date() == datetime.now().date()]
+                older_ss = [s for s in screenshots if datetime.fromtimestamp(s.stat().st_mtime).date() != datetime.now().date()]
+                
+                if today_ss:
+                    st.markdown("#### Today")
+                    cols = st.columns(min(4, len(today_ss)))
+                    for i, ss in enumerate(today_ss[:4]):
+                        with cols[i]:
+                            st.image(str(ss), caption=ss.name, use_container_width=True)
+                            st.caption(datetime.fromtimestamp(ss.stat().st_mtime).strftime("%H:%M:%S"))
+                
+                if older_ss:
+                    st.markdown("#### Older Screenshots")
+                    cols = st.columns(4)
+                    for i, ss in enumerate(older_ss[:12]):
+                        with cols[i % 4]:
+                            st.image(str(ss), caption=ss.name, use_container_width=True)
+                
+                # Clear screenshots button
+                st.markdown("---")
+                if st.button("🗑️ Clear All Screenshots", type="secondary"):
+                    for ss in screenshots:
+                        ss.unlink()
+                    st.success("Screenshots cleared!")
+                    st.rerun()
+            else:
+                st.info("No debug screenshots yet")
+        else:
+            st.info("Debug directory not found")
 
 # ==================== TAB 7: SETTINGS ====================
 with tab7:
