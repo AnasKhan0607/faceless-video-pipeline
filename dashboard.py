@@ -67,7 +67,7 @@ st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 st.markdown("---")
 
 # ==================== TABS ====================
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["📊 Overview", "📹 Videos", "📝 Scripts", "📈 Analytics", "💰 Costs", "🚨 Logs", "⚙️ Settings"])
+tab1, tab2, tab2b, tab3, tab4, tab5, tab6, tab7 = st.tabs(["📊 Overview", "📹 Videos", "📋 Queue", "📝 Scripts", "📈 Analytics", "💰 Costs", "🚨 Logs", "⚙️ Settings"])
 
 # ==================== TAB 1: OVERVIEW ====================
 with tab1:
@@ -345,6 +345,172 @@ with tab2:
                             st.markdown("---")
         else:
             st.info("No videos generated yet. Run `python auto_generate.py --count 1`")
+
+# ==================== TAB 2B: QUEUE ====================
+QUEUE_FILE = LOGS_DIR / "upload_queue.json"
+
+def load_queue():
+    try:
+        if QUEUE_FILE.exists():
+            return json.loads(QUEUE_FILE.read_text())
+        return []
+    except:
+        return []
+
+def save_queue(queue):
+    QUEUE_FILE.write_text(json.dumps(queue, indent=2))
+
+with tab2b:
+    st.subheader("📋 Upload Queue")
+    
+    queue = load_queue()
+    
+    # Stats
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Queued", len(queue))
+    with col2:
+        pending = len([q for q in queue if q.get("status") == "pending"])
+        st.metric("Pending", pending)
+    with col3:
+        completed = len([q for q in queue if q.get("status") == "completed"])
+        st.metric("Completed", completed)
+    
+    st.markdown("---")
+    
+    # Add to queue
+    st.markdown("### ➕ Add Video to Queue")
+    
+    # Get available videos (rendered but not in queue)
+    queued_videos = [q.get("video_path") for q in queue]
+    available_videos = [v for v in OUT_DIR.glob("*_final.mp4") if str(v) not in queued_videos]
+    
+    if available_videos:
+        col1, col2, col3 = st.columns([2, 1, 1])
+        
+        with col1:
+            selected_video = st.selectbox(
+                "Select video",
+                available_videos,
+                format_func=lambda x: x.stem
+            )
+        
+        with col2:
+            platforms = st.multiselect(
+                "Platforms",
+                ["TikTok", "YouTube", "Instagram"],
+                default=["TikTok", "YouTube", "Instagram"]
+            )
+        
+        with col3:
+            st.markdown("")
+            st.markdown("")
+            if st.button("➕ Add to Queue", use_container_width=True):
+                if selected_video and platforms:
+                    # Get topic from script if available
+                    ep_id = selected_video.stem.split("_")[0] + "_" + selected_video.stem.split("_")[1]
+                    script_files = list(SCRIPTS_DIR.glob(f"{ep_id}*.json"))
+                    topic = "Unknown"
+                    if script_files:
+                        try:
+                            script = json.loads(script_files[0].read_text())
+                            topic = script.get("topic", "Unknown")
+                        except:
+                            pass
+                    
+                    queue.append({
+                        "id": datetime.now().strftime("%Y%m%d%H%M%S"),
+                        "video_path": str(selected_video),
+                        "topic": topic,
+                        "platforms": platforms,
+                        "status": "pending",
+                        "added_at": datetime.now().isoformat(),
+                        "priority": len(queue) + 1
+                    })
+                    save_queue(queue)
+                    st.success(f"Added to queue: {selected_video.stem}")
+                    st.rerun()
+    else:
+        st.info("No videos available to queue. All rendered videos are already queued or none exist.")
+    
+    st.markdown("---")
+    
+    # Queue list
+    st.markdown("### 📋 Queue")
+    
+    if queue:
+        # Filter
+        status_filter = st.selectbox("Filter by status", ["All", "Pending", "Completed", "Failed"])
+        
+        filtered_queue = queue
+        if status_filter != "All":
+            filtered_queue = [q for q in queue if q.get("status", "").lower() == status_filter.lower()]
+        
+        # Sort by priority
+        filtered_queue = sorted(filtered_queue, key=lambda x: x.get("priority", 999))
+        
+        for i, item in enumerate(filtered_queue):
+            status_icons = {"pending": "⏳", "completed": "✅", "failed": "❌", "uploading": "🔄"}
+            status = item.get("status", "pending")
+            icon = status_icons.get(status, "❓")
+            
+            col1, col2, col3, col4, col5 = st.columns([3, 2, 1, 1, 1])
+            
+            with col1:
+                st.write(f"{icon} **{item.get('topic', 'Unknown')[:40]}**")
+            
+            with col2:
+                platforms = ", ".join(item.get("platforms", []))
+                st.write(f"📱 {platforms}")
+            
+            with col3:
+                # Move up
+                if i > 0 and status == "pending":
+                    if st.button("⬆️", key=f"up_{item.get('id')}"):
+                        # Swap priorities
+                        prev_item = filtered_queue[i-1]
+                        for q in queue:
+                            if q.get("id") == item.get("id"):
+                                q["priority"] = prev_item.get("priority", i)
+                            elif q.get("id") == prev_item.get("id"):
+                                q["priority"] = item.get("priority", i+1)
+                        save_queue(queue)
+                        st.rerun()
+            
+            with col4:
+                # Move down
+                if i < len(filtered_queue) - 1 and status == "pending":
+                    if st.button("⬇️", key=f"down_{item.get('id')}"):
+                        next_item = filtered_queue[i+1]
+                        for q in queue:
+                            if q.get("id") == item.get("id"):
+                                q["priority"] = next_item.get("priority", i+2)
+                            elif q.get("id") == next_item.get("id"):
+                                q["priority"] = item.get("priority", i+1)
+                        save_queue(queue)
+                        st.rerun()
+            
+            with col5:
+                # Remove
+                if st.button("🗑️", key=f"remove_{item.get('id')}"):
+                    queue = [q for q in queue if q.get("id") != item.get("id")]
+                    save_queue(queue)
+                    st.rerun()
+        
+        st.markdown("---")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🗑️ Clear Completed", use_container_width=True):
+                queue = [q for q in queue if q.get("status") != "completed"]
+                save_queue(queue)
+                st.rerun()
+        with col2:
+            if st.button("🗑️ Clear All", use_container_width=True, type="secondary"):
+                save_queue([])
+                st.rerun()
+    else:
+        st.info("Queue is empty. Add videos above to schedule uploads.")
 
 # ==================== TAB 3: SCRIPTS ====================
 with tab3:
