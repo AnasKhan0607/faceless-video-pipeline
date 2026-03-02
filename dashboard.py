@@ -141,6 +141,93 @@ with tab1:
     | Morning Post | 10:00 AM daily | ✅ Enabled |
     | Evening Post | 6:00 PM daily | ✅ Enabled |
     """)
+    
+    st.markdown("---")
+    
+    # Quick Generate Section
+    st.subheader("🚀 Quick Generate")
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        # Generation options
+        gen_col1, gen_col2, gen_col3 = st.columns(3)
+        
+        with gen_col1:
+            num_videos = st.number_input("Videos to generate", min_value=1, max_value=10, value=1)
+        
+        with gen_col2:
+            # Load character duos
+            CHARACTERS_DIR = PIPELINE_DIR / "characters"
+            duos = [d.name for d in CHARACTERS_DIR.iterdir() if d.is_dir() and not d.name.startswith('.')]
+            selected_duo = st.selectbox("Character Duo", duos, index=duos.index("peter_stewie") if "peter_stewie" in duos else 0)
+        
+        with gen_col3:
+            upload_after = st.checkbox("Upload after generation", value=False)
+    
+    with col2:
+        st.markdown("")  # Spacing
+        st.markdown("")
+        
+        # Generate button
+        if st.button("🎬 Generate Video", type="primary", use_container_width=True):
+            # Store generation request in session state
+            st.session_state['generate_request'] = {
+                'num': num_videos,
+                'duo': selected_duo,
+                'upload': upload_after,
+                'started': True
+            }
+    
+    # Handle generation (outside the button to prevent rerun issues)
+    if st.session_state.get('generate_request', {}).get('started'):
+        req = st.session_state['generate_request']
+        st.session_state['generate_request'] = {}  # Clear request
+        
+        with st.status("🎬 Generating video...", expanded=True) as status:
+            import subprocess
+            import sys
+            
+            # Build command
+            cmd = [sys.executable, "auto_generate.py", "--count", str(req['num'])]
+            if req.get('upload'):
+                cmd.append("--upload")
+            
+            st.write(f"Running: `{' '.join(cmd)}`")
+            st.write(f"Character duo: {req['duo']}")
+            
+            try:
+                # Run the command
+                result = subprocess.run(
+                    cmd,
+                    cwd=str(PIPELINE_DIR),
+                    capture_output=True,
+                    text=True,
+                    timeout=300  # 5 minute timeout
+                )
+                
+                if result.returncode == 0:
+                    status.update(label="✅ Video generated!", state="complete")
+                    st.success("Video generated successfully!")
+                    
+                    # Show output
+                    with st.expander("Output"):
+                        st.code(result.stdout)
+                    
+                    # Refresh to show new video
+                    st.balloons()
+                else:
+                    status.update(label="❌ Generation failed", state="error")
+                    st.error("Generation failed!")
+                    with st.expander("Error Output"):
+                        st.code(result.stderr or result.stdout)
+                        
+            except subprocess.TimeoutExpired:
+                status.update(label="⏱️ Timeout", state="error")
+                st.error("Generation timed out after 5 minutes")
+            except Exception as e:
+                status.update(label="❌ Error", state="error")
+                st.error(f"Error: {e}")
 
 # ==================== TAB 2: VIDEOS ====================
 with tab2:
