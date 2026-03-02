@@ -471,26 +471,128 @@ with tab6:
 with tab6:
     st.subheader("⚙️ Settings & Tools")
     
-    col1, col2 = st.columns(2)
+    settings_tab1, settings_tab2, settings_tab3 = st.tabs(["💡 Topic Editor", "🎮 Backgrounds", "🛠️ Commands"])
     
-    with col1:
+    # ==================== TOPIC EDITOR ====================
+    with settings_tab1:
+        st.markdown("### 💡 Topic Editor")
+        
+        # Load topics
+        try:
+            topics_data = json.loads(TOPICS_FILE.read_text())
+            topics = topics_data.get("topics", [])
+        except:
+            topics_data = {"niche": "tech", "topics": []}
+            topics = []
+        
+        # Stats
+        col1, col2, col3 = st.columns(3)
+        used_count = sum(1 for t in topics if t.get("used"))
+        with col1:
+            st.metric("Total Topics", len(topics))
+        with col2:
+            st.metric("Used", used_count)
+        with col3:
+            st.metric("Available", len(topics) - used_count)
+        
+        st.markdown("---")
+        
+        # Add new topic
+        st.markdown("#### ➕ Add New Topic")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            new_topic = st.text_input("Topic", placeholder="e.g., What is Machine Learning")
+        with col2:
+            if st.button("Add Topic", use_container_width=True):
+                if new_topic.strip():
+                    # Find max ID
+                    max_id = max([t.get("id", 0) for t in topics], default=0)
+                    topics.append({
+                        "id": max_id + 1,
+                        "topic": new_topic.strip(),
+                        "used": False
+                    })
+                    topics_data["topics"] = topics
+                    TOPICS_FILE.write_text(json.dumps(topics_data, indent=2))
+                    st.success(f"Added: {new_topic}")
+                    st.rerun()
+                else:
+                    st.error("Topic cannot be empty")
+        
+        st.markdown("---")
+        
+        # Filter
+        col1, col2 = st.columns(2)
+        with col1:
+            topic_filter = st.selectbox("Filter", ["All", "Available", "Used"], key="topic_filter")
+        with col2:
+            topic_search = st.text_input("Search", "", key="topic_search")
+        
+        # Apply filter
+        filtered_topics = topics
+        if topic_filter == "Available":
+            filtered_topics = [t for t in topics if not t.get("used")]
+        elif topic_filter == "Used":
+            filtered_topics = [t for t in topics if t.get("used")]
+        if topic_search:
+            filtered_topics = [t for t in filtered_topics if topic_search.lower() in t.get("topic", "").lower()]
+        
+        st.markdown(f"**Showing {len(filtered_topics)} topics**")
+        
+        # Topic list
+        for i, topic in enumerate(filtered_topics):
+            col1, col2, col3, col4 = st.columns([4, 1, 1, 1])
+            
+            with col1:
+                status = "✅" if topic.get("used") else "⏳"
+                st.write(f"{status} **{topic.get('topic', 'Unknown')}**")
+            
+            with col2:
+                # Toggle used status
+                if topic.get("used"):
+                    if st.button("↩️ Unuse", key=f"unuse_{topic.get('id')}"):
+                        for t in topics:
+                            if t.get("id") == topic.get("id"):
+                                t["used"] = False
+                                t.pop("used_at", None)
+                        topics_data["topics"] = topics
+                        TOPICS_FILE.write_text(json.dumps(topics_data, indent=2))
+                        st.rerun()
+                else:
+                    if st.button("✓ Mark Used", key=f"use_{topic.get('id')}"):
+                        for t in topics:
+                            if t.get("id") == topic.get("id"):
+                                t["used"] = True
+                                t["used_at"] = datetime.now().isoformat()
+                        topics_data["topics"] = topics
+                        TOPICS_FILE.write_text(json.dumps(topics_data, indent=2))
+                        st.rerun()
+            
+            with col3:
+                # Edit (in expander)
+                pass  # Edit handled in expander below
+            
+            with col4:
+                # Delete
+                if st.button("🗑️", key=f"del_{topic.get('id')}"):
+                    topics = [t for t in topics if t.get("id") != topic.get("id")]
+                    topics_data["topics"] = topics
+                    TOPICS_FILE.write_text(json.dumps(topics_data, indent=2))
+                    st.success(f"Deleted topic")
+                    st.rerun()
+    
+    # ==================== BACKGROUNDS ====================
+    with settings_tab2:
         st.markdown("### 🎮 Backgrounds")
         backgrounds = list(BACKGROUNDS_DIR.glob("*.mp4"))
         for bg in backgrounds:
             size_mb = bg.stat().st_size / (1024 * 1024)
             st.write(f"• **{bg.stem}** ({size_mb:.1f} MB)")
         
-        st.markdown("---")
-        st.markdown("### 💡 Upcoming Topics")
-        try:
-            topics_data = json.loads(TOPICS_FILE.read_text())
-            next_topics = [t["topic"] for t in topics_data.get("topics", []) if not t.get("used")][:10]
-            for i, topic in enumerate(next_topics, 1):
-                st.write(f"{i}. {topic}")
-        except:
-            st.info("No topics loaded")
+        st.info("To add backgrounds: place MP4 files in `backgrounds/` folder")
     
-    with col2:
+    # ==================== COMMANDS ====================
+    with settings_tab3:
         st.markdown("### 🛠️ Quick Commands")
         st.code("""
 # Generate 1 video + upload
