@@ -10,20 +10,35 @@ Fully automated video generation:
 5. (Optional) Upload to platforms
 
 Usage:
-  python auto_generate.py                    # Generate one video
-  python auto_generate.py --count 3          # Generate 3 videos
-  python auto_generate.py --topic "What is X" # Specific topic
-  python auto_generate.py --upload           # Generate and upload
+  python auto_generate.py                        # Generate one video (default account)
+  python auto_generate.py --account tech-main    # Generate for specific account
+  python auto_generate.py --count 3              # Generate 3 videos
+  python auto_generate.py --topic "What is X"    # Specific topic
+  python auto_generate.py --upload               # Generate and upload
 """
 
 import argparse
 import json
+import random
 import subprocess
 import sys
 from pathlib import Path
 from datetime import datetime
 import httpx
 import os
+
+# Load .env file if present
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent / ".env")
+
+# Import account manager
+from accounts import (
+    get_account, 
+    load_accounts, 
+    get_topics_for_account,
+    mark_topic_used as account_mark_topic_used,
+    get_credentials_path
+)
 
 # Paths
 PIPELINE_DIR = Path(__file__).parent
@@ -322,12 +337,25 @@ def render_video(script_path: Path) -> Path | None:
     return None
 
 
-def upload_to_tiktok(video_path: Path, title: str, topic: str) -> bool:
+def upload_to_tiktok(video_path: Path, title: str, topic: str, account_id: str = None) -> bool:
     """Upload video to TikTok."""
     try:
         from upload_tiktok import upload_video
-        caption = f"{title} 🔥 #tech #coding #programming #learn #developer #software"
-        return upload_video(str(video_path), caption, ["tech", "coding", "programming", "shorts"])
+        
+        # Get account-specific credentials if account provided
+        credentials_path = None
+        niche_tags = ["tech", "coding", "programming"]
+        
+        if account_id:
+            cred_path = get_credentials_path(account_id, "tiktok")
+            if cred_path and cred_path.exists():
+                credentials_path = str(cred_path)
+            account = get_account(account_id)
+            if account:
+                niche_tags = [account["niche"]] + niche_tags[:2]
+        
+        caption = f"{title} 🔥 #{niche_tags[0]} #shorts #learn #viral"
+        return upload_video(str(video_path), caption, niche_tags + ["shorts"], cookies_file=credentials_path)
     except ImportError:
         print("⚠️ TikTok uploader not available")
         return False
@@ -336,16 +364,30 @@ def upload_to_tiktok(video_path: Path, title: str, topic: str) -> bool:
         return False
 
 
-def upload_to_youtube(video_path: Path, title: str, topic: str) -> bool:
+def upload_to_youtube(video_path: Path, title: str, topic: str, account_id: str = None) -> bool:
     """Upload video to YouTube Shorts."""
     try:
         from upload_youtube import upload_video
-        description = f"Explaining {topic} in under 60 seconds!\n\n#Shorts #Tech #Coding #Programming #Learn"
+        
+        # Get account-specific credentials if account provided
+        credentials_path = None
+        niche = "Tech"
+        
+        if account_id:
+            cred_path = get_credentials_path(account_id, "youtube")
+            if cred_path and cred_path.exists():
+                credentials_path = str(cred_path)
+            account = get_account(account_id)
+            if account:
+                niche = account["niche"].title()
+        
+        description = f"Explaining {topic} in under 60 seconds!\n\n#Shorts #{niche} #Learn #Explained"
         return upload_video(
             str(video_path),
             title,
             description=description,
-            tags=["shorts", "tech", "coding", "programming", "learn", "explained"]
+            tags=["shorts", niche.lower(), "learn", "explained", "educational"],
+            credentials_file=credentials_path
         )
     except ImportError:
         print("⚠️ YouTube uploader not available")
@@ -355,12 +397,25 @@ def upload_to_youtube(video_path: Path, title: str, topic: str) -> bool:
         return False
 
 
-def upload_to_instagram(video_path: Path, title: str, topic: str) -> bool:
+def upload_to_instagram(video_path: Path, title: str, topic: str, account_id: str = None) -> bool:
     """Upload video to Instagram Reels."""
     try:
         from upload_instagram import upload_reel
-        caption = f"{title} 🔥\n\n#tech #coding #programming #learntocode #developer #softwareengineer #reels #educational"
-        return upload_reel(str(video_path), caption)
+        
+        # Get account-specific credentials if account provided
+        credentials_path = None
+        niche = "tech"
+        
+        if account_id:
+            cred_path = get_credentials_path(account_id, "instagram")
+            if cred_path and cred_path.exists():
+                credentials_path = str(cred_path)
+            account = get_account(account_id)
+            if account:
+                niche = account["niche"]
+        
+        caption = f"{title} 🔥\n\n#{niche} #learn #reels #educational #viral"
+        return upload_reel(str(video_path), caption, session_file=credentials_path)
     except ImportError:
         print("⚠️ Instagram uploader not available")
         return False
@@ -374,14 +429,62 @@ def generate_one_video(
     duo: str = DEFAULT_DUO,
     background: str = DEFAULT_BACKGROUND,
     specific_topic: str = None,
-    upload: bool = False
+    upload: bool = False,
+    account_id: str = None,
+    platforms: list = None
 ) -> bool:
-    """Generate one video end-to-end."""
+    """Generate one video end-to-end.
+    
+    Args:
+        niche: Topic niche (overridden by account if provided)
+        duo: Character duo (overridden by account if provided)
+        background: Background video (overridden by account if provided)
+        specific_topic: Specific topic to use (bypasses topic list)
+        upload: Whether to upload after generating
+        account_id: Account ID to use (loads settings from accounts.json)
+        platforms: List of platforms to upload to (default: all enabled for account)
+    """
+    
+    # Load account settings if account_id provided
+    if account_id:
+        account = get_account(account_id)
+        if not account:
+            print(f"❌ Account not found: {account_id}")
+            return False
+        
+        print(f"📋 Using account: {account['name']} ({account['niche']})")
+        niche = account["niche"]
+        
+        # Pick random character combo from account's list
+        chars = account.get("content", {}).get("characters", ["peter", "stewie"])
+        if len(chars) >= 2:
+            char1, char2 = random.sample(chars, 2)
+            duo = f"{char1}_{char2}"
+        
+        # Pick random background from account's list
+        backgrounds = account.get("content", {}).get("backgrounds", [DEFAULT_BACKGROUND])
+        background = random.choice(backgrounds)
+        
+        # Get enabled platforms if not specified
+        if platforms is None and upload:
+            platforms = [
+                p for p, cfg in account.get("platforms", {}).items()
+                if cfg.get("enabled", False)
+            ]
     
     # Get topic
     if specific_topic:
         topic = specific_topic
         topic_id = 0
+    elif account_id:
+        # Use account's topic list
+        available_topics = get_topics_for_account(account_id)
+        if not available_topics:
+            print(f"❌ No unused topics left for account {account_id}!")
+            return False
+        topic_data = available_topics[0]
+        topic = topic_data["topic"]
+        topic_id = topic_data["id"]
     else:
         topic_data = get_next_topic(niche)
         if not topic_data:
@@ -394,6 +497,8 @@ def generate_one_video(
     print(f"🎯 Topic: {topic}")
     print(f"👥 Characters: {duo}")
     print(f"🎮 Background: {background}")
+    if account_id:
+        print(f"👤 Account: {account_id}")
     print(f"{'='*50}\n")
     
     # Generate script
@@ -405,7 +510,10 @@ def generate_one_video(
     if video_path:
         # Mark topic as used
         if topic_id > 0:
-            mark_topic_used(niche, topic_id)
+            if account_id:
+                account_mark_topic_used(account_id, topic_id)
+            else:
+                mark_topic_used(niche, topic_id)
             print(f"✓ Marked topic {topic_id} as used")
         
         # Upload if requested
@@ -413,9 +521,15 @@ def generate_one_video(
             script_data = json.loads(script_path.read_text())
             title = script_data.get("title", topic)
             print("\n📤 Uploading to platforms...")
-            upload_to_tiktok(video_path, title, topic)
-            upload_to_youtube(video_path, title, topic)
-            upload_to_instagram(video_path, title, topic)
+            
+            platforms_to_upload = platforms or ["tiktok", "youtube", "instagram"]
+            
+            if "tiktok" in platforms_to_upload:
+                upload_to_tiktok(video_path, title, topic, account_id)
+            if "youtube" in platforms_to_upload:
+                upload_to_youtube(video_path, title, topic, account_id)
+            if "instagram" in platforms_to_upload:
+                upload_to_instagram(video_path, title, topic, account_id)
         
         return True
     
@@ -424,14 +538,39 @@ def generate_one_video(
 
 def main():
     parser = argparse.ArgumentParser(description="Auto-generate TikTok videos")
+    parser.add_argument("--account", help="Account ID from accounts.json (recommended)")
     parser.add_argument("--count", type=int, default=1, help="Number of videos to generate")
     parser.add_argument("--niche", default=DEFAULT_NICHE, help="Topic niche (default: tech)")
     parser.add_argument("--duo", default=DEFAULT_DUO, help="Character duo (default: peter_stewie)")
     parser.add_argument("--background", default=DEFAULT_BACKGROUND, help="Background video")
     parser.add_argument("--topic", help="Specific topic (bypasses topic list)")
     parser.add_argument("--upload", action="store_true", help="Upload after generating")
+    parser.add_argument("--platforms", nargs="+", help="Platforms to upload to (tiktok youtube instagram)")
     parser.add_argument("--dry-run", action="store_true", help="Generate script only, no render")
+    parser.add_argument("--list-accounts", action="store_true", help="List available accounts")
     args = parser.parse_args()
+    
+    # List accounts if requested
+    if args.list_accounts:
+        data = load_accounts()
+        print("📋 Available accounts:")
+        for acc in data.get("accounts", []):
+            status = "✅" if acc.get("active", True) else "⏸️"
+            platforms = ", ".join([
+                p for p, cfg in acc.get("platforms", {}).items() 
+                if cfg.get("enabled", False)
+            ])
+            print(f"  {status} {acc['id']}: {acc['name']} ({acc['niche']}) -> {platforms}")
+        return
+    
+    # If no account specified, try to use default
+    account_id = args.account
+    if not account_id:
+        data = load_accounts()
+        default_account = data.get("settings", {}).get("default_account")
+        if default_account and get_account(default_account):
+            account_id = default_account
+            print(f"ℹ️ Using default account: {account_id}")
     
     print("🚀 Auto Video Generator")
     print(f"   Generating {args.count} video(s)...\n")
@@ -442,7 +581,12 @@ def main():
             print(f"\n📹 Video {i+1}/{args.count}")
         
         if args.dry_run:
-            topic_data = get_next_topic(args.niche)
+            if account_id:
+                topics = get_topics_for_account(account_id)
+                topic_data = topics[0] if topics else None
+            else:
+                topic_data = get_next_topic(args.niche)
+            
             if topic_data:
                 print(f"Would generate: {topic_data['topic']}")
                 script_path = create_full_script(
@@ -459,7 +603,9 @@ def main():
                 duo=args.duo,
                 background=args.background,
                 specific_topic=args.topic if i == 0 else None,
-                upload=args.upload
+                upload=args.upload,
+                account_id=account_id,
+                platforms=args.platforms
             ):
                 success += 1
     

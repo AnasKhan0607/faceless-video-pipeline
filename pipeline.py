@@ -14,6 +14,10 @@ import subprocess
 import httpx
 from pathlib import Path
 
+# Load .env file if present
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent / ".env")
+
 # === CONFIG ===
 FISH_API_KEY = os.environ.get("FISH_API_KEY", "")
 FISH_VOICES = {

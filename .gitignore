@@ -24,6 +24,10 @@ client_secrets.json
 dashboard_config.json
 logs/
 
+# Multi-account credentials (keep structure, ignore contents)
+credentials/*.json
+!credentials/.gitkeep
+
 # Partial downloads
 *.part
 *.ytdl

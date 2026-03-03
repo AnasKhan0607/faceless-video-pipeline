@@ -1,0 +1,71 @@
+{
+  "episode": "ep_016_20260302_180010",
+  "title": "Redis: Brain Freeze Explained",
+  "topic": "What is Redis",
+  "duo": "peter_stewie",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's this thing called Redis?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Think of it as a very fast library clerk, storing data in a flash.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "So, it's all about fast service, got it!",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "Precisely, Peter! Redis is a key-value store, in-memory, for speed.",
+      "pause_after_ms": 450
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "Data is stored in memory, making access extremely quick.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "It's perfect for caching, real-time analytics, and session storage.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "Like when I need to remember my beer order real quick!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Exactly! It's used in social media feeds or real-time scoreboards.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "Next time I forget something, I'll blame my lack of Redis!",
+      "pause_after_ms": 450
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "That, or you're just getting old, Peter.",
+      "pause_after_ms": 300
+    }
+  ],
+  "generated_at": "2026-03-02T18:00:10.133930",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_016_20260302_180010.png"
+}

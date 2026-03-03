@@ -1,0 +1,77 @@
+{
+  "episode": "ep_014_20260302_050239",
+  "title": "SQL vs NoSQL: Explained by the Griffins!",
+  "topic": "What is SQL vs NoSQL",
+  "duo": "peter_stewie",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's the deal with SQL and NoSQL? Sounds like mumbo jumbo!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Ah, Peter, think of SQL as a well-organized library.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 3,
+      "character": "stewie",
+      "line": "While NoSQL is more like a messy yet cozy bookstore.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "SQL databases use tables to store data in a structured way.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "NoSQL databases store data in flexible formats like JSON or documents.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "peter",
+      "line": "So, it's like tidy spreadsheets vs. free-form notebooks?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "stewie",
+      "line": "Precisely, Peter! Use SQL for complex queries, NoSQL for dynamic growth.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "peter",
+      "line": "Right, like when Lois organizes my socks. Structured!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "stewie",
+      "line": "And NoSQL is your sock drawer on laundry day. Chaos!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "peter",
+      "line": "Got it! My socks are like data, sometimes neatly paired, sometimes... not.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 11,
+      "character": "stewie",
+      "line": "Exactly! Now if only your brain had a SQL database.",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-02T05:02:39.344276",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_014_20260302_050239.png"
+}

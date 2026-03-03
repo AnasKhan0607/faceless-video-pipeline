@@ -1,0 +1,71 @@
+{
+  "episode": "ep_015_20260302_100136",
+  "title": "Caching with the Griffins!",
+  "topic": "What is caching",
+  "duo": "peter_stewie",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's this 'caching' thing? Is it where you hide cash?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "No, you simpleton. Imagine caching as your brain storing quick notes!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "Notes in the brain? Sounds handy!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "Exactly! Caching stores frequently accessed data for fast retrieval.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "Computers use it to save time reloading the same stuff.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "It speeds up processes by keeping data ready on stand-by.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "Kinda like how I keep snacks handy during TV time?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Precisely! Websites load faster thanks to caching, like instant macaroni!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "So it's like instant brain snacks for computers?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "Well put, Peter. Now if only you could cache some intelligence!",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-02T10:01:36.754653",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_015_20260302_100136.png"
+}
