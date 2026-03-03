@@ -2383,11 +2383,23 @@ with tab7:
     with settings_tab6:
         st.markdown("### 🛠️ Quick Commands")
         st.code("""
-# Generate 1 video + upload
+# Generate for specific account
+python auto_generate.py --account tech-main --upload
+
+# Generate 1 video + upload (uses default account)
 python auto_generate.py --count 1 --upload
 
-# Generate without upload
-python auto_generate.py --count 1
+# List all accounts
+python auto_generate.py --list-accounts
+
+# Show scheduled posts
+python scheduler.py --show
+
+# Run scheduler once (check all accounts)
+python scheduler.py --once
+
+# Manually trigger account
+python scheduler.py --run tech-main
 
 # TikTok setup
 python upload_tiktok.py --setup
