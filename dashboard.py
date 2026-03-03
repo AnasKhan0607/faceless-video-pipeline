@@ -1316,9 +1316,129 @@ def save_dashboard_config(config):
 # ==================== TAB 5B: RESOURCES ====================
 import psutil
 import shutil
+from streamlit_autorefresh import st_autorefresh
 
 with tab5b:
     st.subheader("💾 System Resources")
+    
+    # ==================== REAL-TIME MONITORING ====================
+    st.markdown("### 🔴 Live System Monitor")
+    
+    # Auto-refresh controls
+    col1, col2, col3 = st.columns([1, 1, 2])
+    
+    with col1:
+        live_enabled = st.toggle("Live Updates", value=False, key="live_toggle")
+    
+    with col2:
+        refresh_interval = st.selectbox(
+            "Interval",
+            options=[1, 2, 5, 10],
+            index=1,
+            format_func=lambda x: f"{x}s",
+            key="refresh_interval",
+            disabled=not live_enabled
+        )
+    
+    with col3:
+        if live_enabled:
+            st.markdown(f"<span style='color: #ff4444; animation: blink 1s infinite;'>● LIVE</span> — Refreshing every {refresh_interval}s", unsafe_allow_html=True)
+            # Add blinking CSS
+            st.markdown("""
+            <style>
+            @keyframes blink {
+                0%, 50% { opacity: 1; }
+                51%, 100% { opacity: 0.3; }
+            }
+            </style>
+            """, unsafe_allow_html=True)
+        else:
+            st.caption("Enable live updates for real-time monitoring")
+    
+    # Auto-refresh when enabled
+    if live_enabled:
+        st_autorefresh(interval=refresh_interval * 1000, key="resource_refresh")
+    
+    # Real-time metrics in a highlighted box
+    st.markdown("""
+    <style>
+    .live-metrics {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        padding: 1rem;
+        border-radius: 12px;
+        border: 1px solid rgba(255,100,100,0.3);
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Live metrics row
+    live_col1, live_col2, live_col3, live_col4 = st.columns(4)
+    
+    with live_col1:
+        cpu_percent = psutil.cpu_percent(interval=0.1)
+        cpu_color = "#2ecc71" if cpu_percent < 50 else "#f1c40f" if cpu_percent < 80 else "#e74c3c"
+        st.metric("🔥 CPU", f"{cpu_percent:.1f}%")
+        st.progress(min(cpu_percent / 100, 1.0))
+    
+    with live_col2:
+        memory = psutil.virtual_memory()
+        mem_percent = memory.percent
+        mem_used_gb = memory.used / (1024**3)
+        mem_total_gb = memory.total / (1024**3)
+        st.metric("🧠 Memory", f"{mem_percent:.1f}%")
+        st.progress(min(mem_percent / 100, 1.0))
+        st.caption(f"{mem_used_gb:.1f} / {mem_total_gb:.1f} GB")
+    
+    with live_col3:
+        try:
+            disk = shutil.disk_usage(PIPELINE_DIR)
+            disk_percent = (disk.used / disk.total) * 100
+            disk_free_gb = disk.free / (1024**3)
+        except:
+            disk_percent = 0
+            disk_free_gb = 0
+        st.metric("💿 Disk", f"{disk_percent:.1f}%")
+        st.progress(min(disk_percent / 100, 1.0))
+        st.caption(f"{disk_free_gb:.1f} GB free")
+    
+    with live_col4:
+        # Network I/O (if available)
+        try:
+            net = psutil.net_io_counters()
+            # Store previous values in session state for rate calculation
+            if 'prev_net_bytes' not in st.session_state:
+                st.session_state.prev_net_bytes = net.bytes_sent + net.bytes_recv
+                st.session_state.prev_net_time = datetime.now()
+            
+            current_bytes = net.bytes_sent + net.bytes_recv
+            time_diff = (datetime.now() - st.session_state.prev_net_time).total_seconds()
+            
+            if time_diff > 0:
+                bytes_per_sec = (current_bytes - st.session_state.prev_net_bytes) / time_diff
+                if bytes_per_sec >= 1024**2:
+                    net_speed = f"{bytes_per_sec / (1024**2):.1f} MB/s"
+                elif bytes_per_sec >= 1024:
+                    net_speed = f"{bytes_per_sec / 1024:.1f} KB/s"
+                else:
+                    net_speed = f"{bytes_per_sec:.0f} B/s"
+            else:
+                net_speed = "0 B/s"
+            
+            st.session_state.prev_net_bytes = current_bytes
+            st.session_state.prev_net_time = datetime.now()
+            
+            st.metric("🌐 Network", net_speed)
+            
+            # Count active connections
+            try:
+                connections = len(psutil.net_connections())
+                st.caption(f"{connections} connections")
+            except:
+                st.caption("")
+        except:
+            st.metric("🌐 Network", "N/A")
+    
+    st.markdown("---")
     
     # ==================== DISK USAGE ====================
     st.markdown("### 💿 Disk Usage")
@@ -1421,34 +1541,6 @@ with tab5b:
         )])
         fig.update_layout(height=300, margin=dict(t=20, b=20, l=20, r=20))
         st.plotly_chart(fig, use_container_width=True)
-    
-    st.markdown("---")
-    
-    # ==================== SYSTEM RESOURCES ====================
-    st.markdown("### 🖥️ System Resources")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        cpu_percent = psutil.cpu_percent(interval=0.1)
-        st.metric("CPU Usage", f"{cpu_percent:.1f}%")
-        st.progress(min(cpu_percent / 100, 1.0))
-    
-    with col2:
-        memory = psutil.virtual_memory()
-        mem_percent = memory.percent
-        mem_used_gb = memory.used / (1024**3)
-        mem_total_gb = memory.total / (1024**3)
-        st.metric("Memory", f"{mem_used_gb:.1f} / {mem_total_gb:.1f} GB")
-        st.progress(min(mem_percent / 100, 1.0))
-    
-    with col3:
-        # Mac mini specific - check for active processes
-        try:
-            python_procs = len([p for p in psutil.process_iter(['name']) if 'python' in p.info['name'].lower()])
-            st.metric("Python Processes", python_procs)
-        except:
-            st.metric("Python Processes", "N/A")
     
     st.markdown("---")
     
