@@ -17,6 +17,13 @@ import plotly.express as px
 import plotly.graph_objects as go
 import base64
 
+# Import account manager
+from accounts import (
+    load_accounts, save_accounts, get_account, create_account,
+    update_account, delete_account, toggle_account, get_active_accounts,
+    migrate_existing_credentials, CREDENTIALS_DIR
+)
+
 # Config
 PIPELINE_DIR = Path(__file__).parent
 SCRIPTS_DIR = PIPELINE_DIR / "scripts"
@@ -265,7 +272,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==================== TABS ====================
-tab1, tab2, tab2b, tab3, tab4, tab5, tab5b, tab6, tab7 = st.tabs(["📊 Overview", "📹 Videos", "📋 Queue", "📝 Scripts", "📈 Analytics", "💰 Costs", "💾 Resources", "🚨 Logs", "⚙️ Settings"])
+tab1, tab2, tab2b, tab3, tab4, tab5, tab5b, tab6, tab7, tab8 = st.tabs(["📊 Overview", "📹 Videos", "📋 Queue", "📝 Scripts", "📈 Analytics", "💰 Costs", "💾 Resources", "🚨 Logs", "⚙️ Settings", "👥 Accounts"])
 
 # ==================== TAB 1: OVERVIEW ====================
 with tab1:
@@ -304,26 +311,51 @@ with tab1:
     
     st.markdown("---")
     
-    # Platform Status
-    st.subheader("📱 Platform Status")
+    # Active Accounts
+    st.subheader("👥 Active Accounts")
+    active_accounts = get_active_accounts()
+    
+    if active_accounts:
+        acc_cols = st.columns(min(len(active_accounts), 4))
+        for i, acc in enumerate(active_accounts[:4]):
+            with acc_cols[i]:
+                platforms_enabled = sum(1 for p, cfg in acc.get("platforms", {}).items() if cfg.get("enabled"))
+                st.markdown(f"""
+                <div class="metric-card" style="text-align: center;">
+                    <h4>{acc['name']}</h4>
+                    <p>{acc['niche'].title()}</p>
+                    <p>{platforms_enabled} platforms</p>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        if len(active_accounts) > 4:
+            st.caption(f"+{len(active_accounts) - 4} more accounts")
+    else:
+        st.info("No active accounts. Go to the Accounts tab to set one up!")
+    
+    st.markdown("---")
+    
+    # Platform Status (legacy - checks root files)
+    st.subheader("📱 Platform Status (Default Account)")
     col1, col2, col3 = st.columns(3)
     
+    # Check both legacy and new credential locations
     with col1:
-        tiktok_auth = (PIPELINE_DIR / "tiktok_cookies.json").exists()
+        tiktok_auth = (PIPELINE_DIR / "tiktok_cookies.json").exists() or (CREDENTIALS_DIR / "tiktok_tech.json").exists()
         if tiktok_auth:
             st.success("✅ TikTok Connected")
         else:
             st.error("❌ TikTok Not Setup")
     
     with col2:
-        youtube_auth = (PIPELINE_DIR / ".youtube_token.json").exists()
+        youtube_auth = (PIPELINE_DIR / ".youtube_token.json").exists() or (CREDENTIALS_DIR / "youtube_tech.json").exists()
         if youtube_auth:
             st.success("✅ YouTube Connected")
         else:
             st.error("❌ YouTube Not Setup")
     
     with col3:
-        instagram_auth = (PIPELINE_DIR / "instagram_session.json").exists()
+        instagram_auth = (PIPELINE_DIR / "instagram_session.json").exists() or (CREDENTIALS_DIR / "instagram_tech.json").exists()
         if instagram_auth:
             st.success("✅ Instagram Connected")
         else:
@@ -2351,11 +2383,23 @@ with tab7:
     with settings_tab6:
         st.markdown("### 🛠️ Quick Commands")
         st.code("""
-# Generate 1 video + upload
+# Generate for specific account
+python auto_generate.py --account tech-main --upload
+
+# Generate 1 video + upload (uses default account)
 python auto_generate.py --count 1 --upload
 
-# Generate without upload
-python auto_generate.py --count 1
+# List all accounts
+python auto_generate.py --list-accounts
+
+# Show scheduled posts
+python scheduler.py --show
+
+# Run scheduler once (check all accounts)
+python scheduler.py --once
+
+# Manually trigger account
+python scheduler.py --run tech-main
 
 # TikTok setup
 python upload_tiktok.py --setup
@@ -2374,6 +2418,293 @@ Pipeline: {PIPELINE_DIR}
 Scripts:  {SCRIPTS_DIR}
 Videos:   {OUT_DIR}
         """)
+
+# ==================== TAB 8: ACCOUNTS ====================
+with tab8:
+    st.markdown("### 👥 Multi-Account Management")
+    st.markdown("Manage multiple accounts across platforms with different niches and schedules.")
+    
+    # Load accounts
+    accounts_data = load_accounts()
+    accounts_list = accounts_data.get("accounts", [])
+    
+    # Account overview cards
+    if accounts_list:
+        cols = st.columns(min(len(accounts_list), 3))
+        for i, account in enumerate(accounts_list):
+            with cols[i % 3]:
+                status_icon = "✅" if account.get("active", True) else "⏸️"
+                platforms = ", ".join([
+                    p.title() for p, cfg in account.get("platforms", {}).items()
+                    if cfg.get("enabled", False)
+                ])
+                
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h4>{status_icon} {account['name']}</h4>
+                    <p><strong>ID:</strong> {account['id']}</p>
+                    <p><strong>Niche:</strong> {account['niche'].title()}</p>
+                    <p><strong>Platforms:</strong> {platforms or 'None'}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    if st.button("✏️ Edit", key=f"edit_{account['id']}", use_container_width=True):
+                        st.session_state['editing_account'] = account['id']
+                with col_b:
+                    new_status = "Disable" if account.get("active", True) else "Enable"
+                    if st.button(f"{'⏸️' if account.get('active', True) else '▶️'} {new_status}", key=f"toggle_{account['id']}", use_container_width=True):
+                        toggle_account(account['id'])
+                        st.rerun()
+    else:
+        st.info("No accounts configured. Add your first account below!")
+    
+    st.markdown("---")
+    
+    # Add/Edit Account Form
+    editing_id = st.session_state.get('editing_account')
+    editing_account = get_account(editing_id) if editing_id else None
+    
+    form_title = f"✏️ Edit Account: {editing_account['name']}" if editing_account else "➕ Add New Account"
+    
+    with st.expander(form_title, expanded=bool(editing_account)):
+        with st.form("account_form"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                account_name = st.text_input(
+                    "Account Name", 
+                    value=editing_account['name'] if editing_account else "",
+                    placeholder="e.g., Tech Explainer"
+                )
+                
+                niche = st.selectbox(
+                    "Niche",
+                    options=["tech", "finance", "gaming", "science", "history", "sports", "cooking", "fitness", "other"],
+                    index=["tech", "finance", "gaming", "science", "history", "sports", "cooking", "fitness", "other"].index(
+                        editing_account['niche'] if editing_account else "tech"
+                    )
+                )
+                
+                timezone = st.selectbox(
+                    "Timezone",
+                    options=["America/Toronto", "America/New_York", "America/Los_Angeles", "Europe/London", "Asia/Tokyo", "UTC"],
+                    index=0
+                )
+            
+            with col2:
+                # Platform toggles
+                st.markdown("**Platforms**")
+                
+                existing_platforms = editing_account.get("platforms", {}) if editing_account else {}
+                
+                tiktok_enabled = st.checkbox(
+                    "TikTok", 
+                    value=existing_platforms.get("tiktok", {}).get("enabled", True)
+                )
+                youtube_enabled = st.checkbox(
+                    "YouTube", 
+                    value=existing_platforms.get("youtube", {}).get("enabled", True)
+                )
+                instagram_enabled = st.checkbox(
+                    "Instagram", 
+                    value=existing_platforms.get("instagram", {}).get("enabled", True)
+                )
+            
+            # Characters
+            st.markdown("**Characters** (select which voices to use)")
+            all_characters = ["peter", "stewie", "morgan", "trump", "rogan", "spongebob", "babar", "virat"]
+            existing_chars = editing_account.get("content", {}).get("characters", all_characters[:4]) if editing_account else all_characters[:4]
+            
+            char_cols = st.columns(4)
+            selected_chars = []
+            for i, char in enumerate(all_characters):
+                with char_cols[i % 4]:
+                    if st.checkbox(char.title(), value=char in existing_chars, key=f"char_{char}"):
+                        selected_chars.append(char)
+            
+            # Backgrounds
+            st.markdown("**Backgrounds**")
+            all_backgrounds = ["subway_surfers", "minecraft-parkour", "gta-gameplay"]
+            existing_bgs = editing_account.get("content", {}).get("backgrounds", all_backgrounds) if editing_account else all_backgrounds
+            
+            bg_cols = st.columns(3)
+            selected_bgs = []
+            for i, bg in enumerate(all_backgrounds):
+                with bg_cols[i]:
+                    if st.checkbox(bg.replace("-", " ").replace("_", " ").title(), value=bg in existing_bgs, key=f"bg_{bg}"):
+                        selected_bgs.append(bg)
+            
+            # Schedule
+            st.markdown("**Schedule**")
+            schedule_cols = st.columns(2)
+            with schedule_cols[0]:
+                time_1 = st.time_input("Post Time 1", value=datetime.strptime("10:00", "%H:%M").time())
+            with schedule_cols[1]:
+                time_2 = st.time_input("Post Time 2", value=datetime.strptime("18:00", "%H:%M").time())
+            
+            # Days
+            days_cols = st.columns(7)
+            day_names = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+            existing_days = editing_account.get("schedule", {}).get("days", day_names) if editing_account else day_names
+            selected_days = []
+            for i, day in enumerate(day_names):
+                with days_cols[i]:
+                    if st.checkbox(day.title(), value=day in existing_days, key=f"day_{day}"):
+                        selected_days.append(day)
+            
+            # Submit buttons
+            col_submit, col_cancel, col_delete = st.columns([2, 1, 1])
+            
+            with col_submit:
+                submitted = st.form_submit_button(
+                    "💾 Save Account" if editing_account else "➕ Create Account",
+                    use_container_width=True
+                )
+            
+            with col_cancel:
+                if editing_account:
+                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                        st.session_state['editing_account'] = None
+                        st.rerun()
+            
+            with col_delete:
+                if editing_account:
+                    if st.form_submit_button("🗑️ Delete", use_container_width=True):
+                        delete_account(editing_account['id'])
+                        st.session_state['editing_account'] = None
+                        st.success(f"Deleted account: {editing_account['name']}")
+                        st.rerun()
+            
+            if submitted:
+                if not account_name:
+                    st.error("Account name is required!")
+                elif not selected_chars:
+                    st.error("Select at least one character!")
+                elif not selected_bgs:
+                    st.error("Select at least one background!")
+                else:
+                    platforms_config = {
+                        "tiktok": {
+                            "enabled": tiktok_enabled,
+                            "credentials": f"credentials/tiktok_{niche}.json",
+                            "username": None
+                        },
+                        "youtube": {
+                            "enabled": youtube_enabled,
+                            "credentials": f"credentials/youtube_{niche}.json",
+                            "channel_id": None
+                        },
+                        "instagram": {
+                            "enabled": instagram_enabled,
+                            "credentials": f"credentials/instagram_{niche}.json",
+                            "username": None
+                        }
+                    }
+                    
+                    schedule_config = {
+                        "timezone": timezone,
+                        "slots": [
+                            {"time": time_1.strftime("%H:%M"), "platforms": ["tiktok", "youtube", "instagram"]},
+                            {"time": time_2.strftime("%H:%M"), "platforms": ["tiktok", "youtube", "instagram"]}
+                        ],
+                        "days": selected_days
+                    }
+                    
+                    if editing_account:
+                        # Update existing
+                        update_account(editing_account['id'], {
+                            "name": account_name,
+                            "niche": niche,
+                            "platforms": platforms_config,
+                            "content": {
+                                "topics_file": editing_account.get("content", {}).get("topics_file", f"niches/{niche}/topics.json"),
+                                "characters": selected_chars,
+                                "backgrounds": selected_bgs
+                            },
+                            "schedule": schedule_config
+                        })
+                        st.success(f"Updated account: {account_name}")
+                        st.session_state['editing_account'] = None
+                    else:
+                        # Create new
+                        new_account = create_account(
+                            name=account_name,
+                            niche=niche,
+                            platforms=platforms_config,
+                            characters=selected_chars,
+                            backgrounds=selected_bgs,
+                            schedule=schedule_config
+                        )
+                        st.success(f"Created account: {account_name} (ID: {new_account['id']})")
+                    
+                    st.rerun()
+    
+    # Credentials section
+    st.markdown("---")
+    st.markdown("### 🔐 Credentials")
+    st.markdown("Upload or manage platform credentials for each account.")
+    
+    # Show existing credentials
+    CREDENTIALS_DIR.mkdir(exist_ok=True)
+    cred_files = list(CREDENTIALS_DIR.glob("*.json"))
+    
+    if cred_files:
+        cred_df = pd.DataFrame([
+            {
+                "File": f.name,
+                "Platform": f.stem.split("_")[0] if "_" in f.stem else "unknown",
+                "Account": f.stem.split("_")[1] if "_" in f.stem else f.stem,
+                "Size": f"{f.stat().st_size / 1024:.1f} KB",
+                "Modified": datetime.fromtimestamp(f.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+            }
+            for f in cred_files if f.name != ".gitkeep"
+        ])
+        if not cred_df.empty:
+            st.dataframe(cred_df, use_container_width=True)
+    else:
+        st.info("No credential files found. Run platform setup commands to create them.")
+    
+    # Migration helper
+    with st.expander("🔄 Migrate Existing Credentials"):
+        st.markdown("""
+        If you have existing credential files in the pipeline root, click below to copy them to the credentials folder.
+        """)
+        if st.button("Run Migration"):
+            migrate_existing_credentials()
+            st.success("Migration complete! Check the credentials folder.")
+            st.rerun()
+    
+    # Settings
+    st.markdown("---")
+    st.markdown("### ⚙️ Account Settings")
+    
+    settings = accounts_data.get("settings", {})
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        default_account = st.selectbox(
+            "Default Account",
+            options=[a['id'] for a in accounts_list] if accounts_list else [""],
+            index=0 if not accounts_list else (
+                [a['id'] for a in accounts_list].index(settings.get("default_account", "")) 
+                if settings.get("default_account") in [a['id'] for a in accounts_list] else 0
+            )
+        )
+    
+    with col2:
+        parallel_uploads = st.checkbox(
+            "Parallel Uploads",
+            value=settings.get("parallel_uploads", False),
+            help="Upload to multiple platforms simultaneously"
+        )
+    
+    if st.button("💾 Save Settings"):
+        accounts_data["settings"]["default_account"] = default_account
+        accounts_data["settings"]["parallel_uploads"] = parallel_uploads
+        save_accounts(accounts_data)
+        st.success("Settings saved!")
 
 # ==================== FOOTER ====================
 st.markdown("---")

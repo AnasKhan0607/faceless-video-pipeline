@@ -1,0 +1,71 @@
+{
+  "episode": "ep_015_20260302_100052",
+  "title": "Caching Explained by Peter and Stewie Griffin",
+  "topic": "What is caching",
+  "duo": "peter_stewie",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's caching? Is it like finding cash?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Oh, Peter, it's like your fridge!",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "My fridge? Hopefully not as empty!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "No, think of it as storing snacks for quick access!",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "Caching saves data for repeated use, speeding things up!",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "Instead of reloading, it uses stored data. Efficient, yes?",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "Ah, so it stops my videos from buffering!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Exactly! Websites cache to improve performance.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "So, my brain's like caching when I forget stuff?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "More like a glitch, but good try, Peter!",
+      "pause_after_ms": 300
+    }
+  ],
+  "generated_at": "2026-03-02T10:00:52.812476",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_015_20260302_100052.png"
+}

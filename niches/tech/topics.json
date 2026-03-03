@@ -81,12 +81,14 @@
     {
       "id": 14,
       "topic": "What is SQL vs NoSQL",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-02T05:03:28.466467"
     },
     {
       "id": 15,
       "topic": "What is caching",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-02T10:02:13.272653"
     },
     {
       "id": 16,

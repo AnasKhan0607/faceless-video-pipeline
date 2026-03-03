@@ -1,0 +1,47 @@
+{
+  "accounts": [
+    {
+      "id": "tech-main",
+      "name": "Tech Explainer",
+      "niche": "tech",
+      "platforms": {
+        "tiktok": {
+          "enabled": true,
+          "credentials": "credentials/tiktok_tech.json",
+          "username": null
+        },
+        "youtube": {
+          "enabled": true,
+          "credentials": "credentials/youtube_tech.json",
+          "channel_id": null
+        },
+        "instagram": {
+          "enabled": true,
+          "credentials": "credentials/instagram_tech.json",
+          "username": null
+        }
+      },
+      "content": {
+        "topics_file": "niches/tech/topics.json",
+        "characters": ["peter", "stewie", "morgan", "trump", "rogan", "spongebob"],
+        "backgrounds": ["subway_surfers", "minecraft-parkour", "gta-gameplay"]
+      },
+      "schedule": {
+        "timezone": "America/Toronto",
+        "slots": [
+          {"time": "10:00", "platforms": ["tiktok", "youtube", "instagram"]},
+          {"time": "18:00", "platforms": ["tiktok", "youtube", "instagram"]}
+        ],
+        "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+      },
+      "active": true,
+      "created_at": "2026-03-03T03:58:00Z"
+    }
+  ],
+  "settings": {
+    "default_account": "tech-main",
+    "parallel_uploads": false,
+    "retry_failed": true,
+    "notify_discord": true
+  }
+}
