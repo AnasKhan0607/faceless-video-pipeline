@@ -265,7 +265,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==================== TABS ====================
-tab1, tab2, tab2b, tab3, tab4, tab5, tab6, tab7 = st.tabs(["📊 Overview", "📹 Videos", "📋 Queue", "📝 Scripts", "📈 Analytics", "💰 Costs", "🚨 Logs", "⚙️ Settings"])
+tab1, tab2, tab2b, tab3, tab4, tab5, tab5b, tab6, tab7 = st.tabs(["📊 Overview", "📹 Videos", "📋 Queue", "📝 Scripts", "📈 Analytics", "💰 Costs", "💾 Resources", "🚨 Logs", "⚙️ Settings"])
 
 # ==================== TAB 1: OVERVIEW ====================
 with tab1:
@@ -1312,6 +1312,248 @@ def load_dashboard_config():
 
 def save_dashboard_config(config):
     CONFIG_FILE.write_text(json.dumps(config, indent=2))
+
+# ==================== TAB 5B: RESOURCES ====================
+import psutil
+import shutil
+
+with tab5b:
+    st.subheader("💾 System Resources")
+    
+    # ==================== DISK USAGE ====================
+    st.markdown("### 💿 Disk Usage")
+    
+    # Get disk usage for the pipeline directory
+    try:
+        disk = shutil.disk_usage(PIPELINE_DIR)
+        disk_total_gb = disk.total / (1024**3)
+        disk_used_gb = disk.used / (1024**3)
+        disk_free_gb = disk.free / (1024**3)
+        disk_percent = (disk.used / disk.total) * 100
+    except:
+        disk_total_gb = disk_used_gb = disk_free_gb = disk_percent = 0
+    
+    # Main disk metrics
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Disk", f"{disk_total_gb:.1f} GB")
+    with col2:
+        st.metric("Used", f"{disk_used_gb:.1f} GB")
+    with col3:
+        st.metric("Free", f"{disk_free_gb:.1f} GB")
+    with col4:
+        status = "🟢" if disk_percent < 70 else "🟡" if disk_percent < 90 else "🔴"
+        st.metric("Usage", f"{status} {disk_percent:.1f}%")
+    
+    # Progress bar for disk usage
+    st.progress(min(disk_percent / 100, 1.0))
+    
+    st.markdown("---")
+    
+    # Pipeline folder breakdown
+    st.markdown("### 📁 Pipeline Storage Breakdown")
+    
+    def get_folder_size(path):
+        """Get total size of a folder in bytes."""
+        total = 0
+        try:
+            for entry in path.rglob('*'):
+                if entry.is_file():
+                    total += entry.stat().st_size
+        except:
+            pass
+        return total
+    
+    def format_size(bytes_size):
+        """Format bytes to human readable."""
+        if bytes_size >= 1024**3:
+            return f"{bytes_size / (1024**3):.2f} GB"
+        elif bytes_size >= 1024**2:
+            return f"{bytes_size / (1024**2):.1f} MB"
+        elif bytes_size >= 1024:
+            return f"{bytes_size / 1024:.1f} KB"
+        return f"{bytes_size} B"
+    
+    # Calculate sizes for each folder
+    folders_to_check = [
+        ("📹 Videos (out/)", OUT_DIR),
+        ("🎵 Audio (audio/)", AUDIO_DIR),
+        ("📝 Scripts (scripts/)", SCRIPTS_DIR),
+        ("🖼️ Topic Images (assets/topics/)", TOPICS_IMG_DIR),
+        ("📸 Debug Screenshots", DEBUG_DIR),
+        ("📋 Logs", LOGS_DIR),
+        ("🎮 Backgrounds", BACKGROUNDS_DIR),
+    ]
+    
+    folder_sizes = []
+    for name, path in folders_to_check:
+        if path.exists():
+            size = get_folder_size(path)
+            file_count = len(list(path.glob('*'))) if path.exists() else 0
+            folder_sizes.append({"Folder": name, "Size": size, "Files": file_count})
+        else:
+            folder_sizes.append({"Folder": name, "Size": 0, "Files": 0})
+    
+    # Sort by size
+    folder_sizes.sort(key=lambda x: x["Size"], reverse=True)
+    
+    # Display as table
+    for item in folder_sizes:
+        col1, col2, col3 = st.columns([3, 1, 1])
+        with col1:
+            st.write(item["Folder"])
+        with col2:
+            st.write(format_size(item["Size"]))
+        with col3:
+            st.write(f"{item['Files']} files")
+    
+    # Total pipeline size
+    total_pipeline_size = sum(item["Size"] for item in folder_sizes)
+    st.markdown(f"**Total Pipeline Size: {format_size(total_pipeline_size)}**")
+    
+    # Pie chart of storage
+    if total_pipeline_size > 0:
+        import plotly.graph_objects as go
+        fig = go.Figure(data=[go.Pie(
+            labels=[item["Folder"].split("(")[0].strip() for item in folder_sizes if item["Size"] > 0],
+            values=[item["Size"] for item in folder_sizes if item["Size"] > 0],
+            hole=.4
+        )])
+        fig.update_layout(height=300, margin=dict(t=20, b=20, l=20, r=20))
+        st.plotly_chart(fig, use_container_width=True)
+    
+    st.markdown("---")
+    
+    # ==================== SYSTEM RESOURCES ====================
+    st.markdown("### 🖥️ System Resources")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        cpu_percent = psutil.cpu_percent(interval=0.1)
+        st.metric("CPU Usage", f"{cpu_percent:.1f}%")
+        st.progress(min(cpu_percent / 100, 1.0))
+    
+    with col2:
+        memory = psutil.virtual_memory()
+        mem_percent = memory.percent
+        mem_used_gb = memory.used / (1024**3)
+        mem_total_gb = memory.total / (1024**3)
+        st.metric("Memory", f"{mem_used_gb:.1f} / {mem_total_gb:.1f} GB")
+        st.progress(min(mem_percent / 100, 1.0))
+    
+    with col3:
+        # Mac mini specific - check for active processes
+        try:
+            python_procs = len([p for p in psutil.process_iter(['name']) if 'python' in p.info['name'].lower()])
+            st.metric("Python Processes", python_procs)
+        except:
+            st.metric("Python Processes", "N/A")
+    
+    st.markdown("---")
+    
+    # ==================== VIDEO STATS ====================
+    st.markdown("### 📊 Video Statistics")
+    
+    video_files = list(OUT_DIR.glob("*_final.mp4"))
+    
+    if video_files:
+        # Calculate stats
+        total_size = sum(v.stat().st_size for v in video_files)
+        avg_size = total_size / len(video_files) if video_files else 0
+        
+        # Get dates
+        dates = [datetime.fromtimestamp(v.stat().st_mtime) for v in video_files]
+        oldest = min(dates) if dates else None
+        newest = max(dates) if dates else None
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Videos", len(video_files))
+        with col2:
+            st.metric("Total Size", format_size(total_size))
+        with col3:
+            st.metric("Avg Size", format_size(avg_size))
+        with col4:
+            if oldest and newest:
+                days = (newest - oldest).days + 1
+                st.metric("Days Active", days)
+        
+        # Storage projections
+        st.markdown("#### 📈 Storage Projections")
+        
+        if oldest and newest and len(video_files) > 1:
+            days_active = (newest - oldest).days + 1
+            videos_per_day = len(video_files) / days_active if days_active > 0 else 0
+            bytes_per_day = total_size / days_active if days_active > 0 else 0
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.write(f"**Rate:** {videos_per_day:.1f} videos/day")
+            with col2:
+                st.write(f"**Storage/day:** {format_size(bytes_per_day)}")
+            with col3:
+                # Days until disk full (rough estimate)
+                if bytes_per_day > 0:
+                    days_until_full = disk_free_gb * (1024**3) / bytes_per_day
+                    st.write(f"**Est. days until full:** {days_until_full:.0f}")
+    else:
+        st.info("No videos generated yet.")
+    
+    st.markdown("---")
+    
+    # ==================== CLEANUP ====================
+    st.markdown("### 🧹 Cleanup")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        # Count old audio folders
+        audio_folders = list(AUDIO_DIR.glob("ep_*")) if AUDIO_DIR.exists() else []
+        st.write(f"**Audio folders:** {len(audio_folders)}")
+        if st.button("🗑️ Clear Audio", use_container_width=True):
+            for folder in audio_folders:
+                try:
+                    shutil.rmtree(folder)
+                except:
+                    pass
+            st.success(f"Cleared {len(audio_folders)} audio folders")
+            st.rerun()
+    
+    with col2:
+        # Debug screenshots
+        screenshots = list(DEBUG_DIR.glob("*.png")) if DEBUG_DIR.exists() else []
+        st.write(f"**Debug screenshots:** {len(screenshots)}")
+        if st.button("🗑️ Clear Screenshots", use_container_width=True):
+            for ss in screenshots:
+                try:
+                    ss.unlink()
+                except:
+                    pass
+            st.success(f"Cleared {len(screenshots)} screenshots")
+            st.rerun()
+    
+    with col3:
+        # Old videos (older than 7 days)
+        if video_files:
+            old_videos = [v for v in video_files if datetime.fromtimestamp(v.stat().st_mtime) < datetime.now() - timedelta(days=7)]
+            old_size = sum(v.stat().st_size for v in old_videos)
+            st.write(f"**Videos >7 days:** {len(old_videos)} ({format_size(old_size)})")
+            if old_videos and st.button("🗑️ Clear Old Videos", use_container_width=True, type="secondary"):
+                for v in old_videos:
+                    try:
+                        v.unlink()
+                    except:
+                        pass
+                st.success(f"Cleared {len(old_videos)} old videos")
+                st.rerun()
+        else:
+            st.write("**Videos >7 days:** 0")
+    
+    # Refresh button
+    st.markdown("---")
+    if st.button("🔄 Refresh Stats", use_container_width=True):
+        st.rerun()
 
 # ==================== TAB 6: LOGS ====================
 with tab6:
