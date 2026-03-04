@@ -19,30 +19,139 @@ import sys
 import time
 from pathlib import Path
 
-COOKIES_FILE = Path(__file__).parent / "tiktok_cookies.json"
+DEFAULT_COOKIES_FILE = Path(__file__).parent / "tiktok_cookies.json"
 
 
-def get_cookies_list():
-    """Load cookies from JSON file."""
-    if not COOKIES_FILE.exists():
+def get_cookies_list(cookies_file: Path = None):
+    """Load cookies from JSON file.
+    
+    Args:
+        cookies_file: Path to cookies file. If None, uses default location.
+    """
+    file_path = cookies_file if cookies_file else DEFAULT_COOKIES_FILE
+    
+    if not file_path.exists():
         return None
     
     try:
-        data = json.loads(COOKIES_FILE.read_text())
+        data = json.loads(file_path.read_text())
         if isinstance(data, list):
             return data
         elif isinstance(data, dict) and "sessionid" in data:
             return [{"name": "sessionid", "value": data["sessionid"], "domain": ".tiktok.com"}]
         return None
     except Exception as e:
-        print(f"❌ Error loading cookies: {e}")
+        print(f"❌ Error loading cookies from {file_path}: {e}")
         return None
 
 
+def dismiss_modal_dialogs(page):
+    """Dismiss any modal dialogs that might block interaction.
+    
+    Handles:
+    - "Are you sure you want to exit?" confirmation modals
+    - Other confirmation/warning dialogs
+    """
+    modal_handled = False
+    
+    try:
+        # Check for exit confirmation modal
+        exit_modal_selectors = [
+            'text="Are you sure you want to exit"',
+            'text="Are you sure you want to leave"',
+            'text="Discard changes"',
+            '[class*="modal"][class*="confirm"]',
+            '[class*="Modal"][class*="Confirm"]',
+        ]
+        
+        for selector in exit_modal_selectors:
+            try:
+                modal = page.locator(selector)
+                if modal.count() > 0 and modal.is_visible():
+                    print(f"  ⚠️ Modal detected: {selector}")
+                    
+                    # Try to click Cancel/Stay/Continue editing buttons
+                    dismiss_buttons = [
+                        'button:has-text("Cancel")',
+                        'button:has-text("Stay")',
+                        'button:has-text("Continue editing")',
+                        'button:has-text("Keep editing")',
+                        'button:has-text("No")',
+                        '[class*="cancel" i]',
+                        '[class*="Cancel"]',
+                    ]
+                    
+                    for btn_selector in dismiss_buttons:
+                        try:
+                            btn = page.locator(btn_selector)
+                            if btn.count() > 0 and btn.first.is_visible():
+                                btn.first.click(timeout=2000)
+                                print(f"  ✓ Dismissed modal via: {btn_selector}")
+                                modal_handled = True
+                                time.sleep(0.5)
+                                break
+                        except:
+                            pass
+                    
+                    if modal_handled:
+                        break
+            except:
+                pass
+        
+        # Also try JavaScript fallback to close any modal
+        if not modal_handled:
+            closed = page.evaluate('''
+                // Look for modal backdrop or container
+                const modals = document.querySelectorAll('[class*="modal"], [class*="Modal"], [role="dialog"]');
+                let closed = false;
+                for (const modal of modals) {
+                    const text = modal.textContent || '';
+                    if (text.includes('exit') || text.includes('leave') || text.includes('discard')) {
+                        // Find Cancel/Stay button inside
+                        const cancelBtn = modal.querySelector('button');
+                        if (cancelBtn) {
+                            const btnText = cancelBtn.textContent.toLowerCase();
+                            // Click the first button that's NOT the destructive action
+                            const buttons = modal.querySelectorAll('button');
+                            for (const btn of buttons) {
+                                const t = btn.textContent.toLowerCase();
+                                if (t.includes('cancel') || t.includes('stay') || t.includes('continue') || t.includes('no')) {
+                                    btn.click();
+                                    closed = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                return closed;
+            ''')
+            if closed:
+                print("  ✓ Dismissed modal via JavaScript")
+                modal_handled = True
+                time.sleep(0.5)
+                
+    except Exception as e:
+        print(f"  ⚠️ Modal dismiss error (non-fatal): {e}")
+    
+    return modal_handled
+
+
 def dismiss_joyride(page, max_attempts=10):
-    """Try to dismiss any Joyride/tutorial overlays."""
+    """Try to dismiss any Joyride/tutorial overlays and feature popups."""
     for i in range(max_attempts):
         try:
+            # FIRST: Handle "New editing features" popup - this is common on TikTok
+            try:
+                got_it_btn = page.locator('button:has-text("Got it")').first
+                if got_it_btn.count() > 0 and got_it_btn.is_visible():
+                    print(f"  🚫 Found 'Got it' popup (attempt {i+1}), dismissing...")
+                    got_it_btn.click(timeout=3000)
+                    time.sleep(0.5)
+                    continue  # Check for more popups
+            except:
+                pass
+            
             # Check for react-joyride overlay (the actual class used by TikTok)
             joyride_selectors = [
                 '.react-joyride__overlay',
@@ -70,6 +179,7 @@ def dismiss_joyride(page, max_attempts=10):
                 'button:has-text("Skip")', 
                 'button:has-text("Got it")',
                 'button:has-text("Got It")',
+                'button:has-text("OK")',
                 'button:has-text("Next")', 
                 'button:has-text("Close")',
                 '[aria-label="Close"]',
@@ -106,8 +216,15 @@ def dismiss_joyride(page, max_attempts=10):
     return False
 
 
-def upload_video(video_path: str, caption: str, tags: list[str] = None) -> bool:
-    """Upload a video to TikTok with Joyride handling."""
+def upload_video(video_path: str, caption: str, tags: list[str] = None, cookies_file: str = None) -> bool:
+    """Upload a video to TikTok with Joyride handling.
+    
+    Args:
+        video_path: Path to the video file
+        caption: Video caption
+        tags: List of hashtags
+        cookies_file: Path to cookies JSON file (optional, uses default if not specified)
+    """
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -119,7 +236,9 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None) -> bool:
         print(f"❌ Video not found: {video_path}")
         return False
     
-    cookies = get_cookies_list()
+    # Use custom cookies file if provided
+    cookies_path = Path(cookies_file) if cookies_file else None
+    cookies = get_cookies_list(cookies_path)
     if not cookies:
         print("❌ No cookies found. Run: python upload_tiktok.py --setup")
         return False
@@ -285,85 +404,123 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None) -> bool:
             
             print("  → Clicking post button...")
             
-            # Find the Post button first
-            post_btn = None
-            for selector in [
-                'button:has-text("Post")',
-                '[data-e2e="post-button"]',
-                'button[class*="TUXButton"][class*="primary"]',
-            ]:
-                try:
-                    btn = page.locator(selector).first
-                    if btn.count() > 0:
-                        post_btn = btn
-                        break
-                except:
-                    continue
+            # Scroll to bottom first to make sure Post button is visible
+            page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+            time.sleep(1)
             
-            if not post_btn:
-                print("  ⚠️ Could not find Post button!")
-            else:
-                # Scroll button into view and click
-                try:
-                    post_btn.scroll_into_view_if_needed()
-                    time.sleep(0.5)
-                    
-                    # Check if button is enabled
-                    is_disabled = post_btn.get_attribute('disabled')
-                    btn_class = post_btn.get_attribute('class') or ''
-                    print(f"  Button state: disabled={is_disabled}, class={btn_class[:50]}...")
-                    
-                    post_btn.click(timeout=10000)
-                    print(f"  ✓ Clicked Post button")
-                    post_clicked = True
-                except Exception as e:
-                    print(f"  Post button click failed: {e}")
+            # CRITICAL: Dismiss any modal dialogs BEFORE clicking Post
+            dismiss_modal_dialogs(page)
+            dismiss_joyride(page)
             
-            # Find and click the Post button (try multiple selectors)
+            # Find and click the Post button with retry logic
             post_clicked = False
-            for selector in [
-                'button:has-text("Post")',
-                '[data-e2e="post-button"]',
-                'button[class*="TUXButton"][class*="primary"]',
-                'button[class*="post" i]',
-                'button[class*="Post" i]',
-            ]:
-                try:
-                    post_btn = page.locator(selector).first
-                    if post_btn.count() > 0:
-                        # Scroll the button into view
-                        post_btn.scroll_into_view_if_needed()
-                        time.sleep(0.3)
-                        
-                        # Check if button is enabled
-                        is_disabled = post_btn.get_attribute('disabled')
-                        btn_class = post_btn.get_attribute('class') or ''
-                        print(f"  Button state: disabled={is_disabled}, class={btn_class[:50]}...")
-                        
-                        if post_btn.is_visible() and not is_disabled:
-                            post_btn.click(timeout=5000)
-                            post_clicked = True
-                            print(f"  ✓ Clicked: {selector}")
-                            break
-                except Exception as e:
-                    print(f"  Selector {selector} failed: {e}")
-                    continue
+            max_post_attempts = 5
+            
+            for attempt in range(max_post_attempts):
+                if post_clicked:
+                    break
+                    
+                if attempt > 0:
+                    print(f"  → Post attempt {attempt + 1}/{max_post_attempts}...")
+                    # Dismiss any modals that appeared
+                    dismiss_modal_dialogs(page)
+                    time.sleep(1)
+                
+                for selector in [
+                    'button:has-text("Post")',
+                    '[data-e2e="post-button"]',
+                    'button[class*="TUXButton"][class*="primary"]',
+                    'button[class*="post" i]',
+                    'button[class*="Post" i]',
+                ]:
+                    try:
+                        post_btn = page.locator(selector).first
+                        if post_btn.count() > 0:
+                            # Scroll the button into view
+                            post_btn.scroll_into_view_if_needed()
+                            time.sleep(0.3)
+                            
+                            # Check for and dismiss modals right before clicking
+                            dismiss_modal_dialogs(page)
+                            
+                            # Check if button is enabled
+                            is_disabled = post_btn.get_attribute('disabled')
+                            btn_class = post_btn.get_attribute('class') or ''
+                            print(f"  Button state: disabled={is_disabled}, class={btn_class[:50]}...")
+                            
+                            if post_btn.is_visible() and not is_disabled:
+                                post_btn.click(timeout=5000)
+                                post_clicked = True
+                                print(f"  ✓ Clicked: {selector}")
+                                break
+                    except Exception as e:
+                        # Check if a modal appeared during click attempt
+                        if dismiss_modal_dialogs(page):
+                            print(f"  ⚠️ Modal blocked click, dismissed and will retry...")
+                            break  # Break inner loop to retry
+                        print(f"  Selector {selector} failed: {e}")
+                        continue
+                
+                # After each attempt, check if modal appeared
+                time.sleep(0.5)
+                dismiss_modal_dialogs(page)
             
             if not post_clicked:
                 # Fallback to JavaScript - find and click the Post button
                 print("  ⚠️ Trying JavaScript click...")
+                # First dismiss modals via JS
                 page.evaluate('''
+                    // Close any modal overlays first
+                    document.querySelectorAll('[class*="modal"], [class*="Modal"], [role="dialog"]').forEach(el => {
+                        const cancelBtn = el.querySelector('button');
+                        if (cancelBtn && el.textContent.includes('exit')) {
+                            const buttons = el.querySelectorAll('button');
+                            for (const btn of buttons) {
+                                if (btn.textContent.toLowerCase().includes('cancel') || 
+                                    btn.textContent.toLowerCase().includes('stay')) {
+                                    btn.click();
+                                    break;
+                                }
+                            }
+                        }
+                    });
+                ''')
+                time.sleep(0.3)
+                
+                clicked = page.evaluate('''
                     // Find all buttons
                     const btns = document.querySelectorAll('button');
+                    let clicked = false;
                     for (const btn of btns) {
-                        if (btn.textContent.trim().toLowerCase() === 'post') {
+                        const text = btn.textContent.trim().toLowerCase();
+                        if (text === 'post' && !btn.disabled) {
                             console.log('Found Post button:', btn);
-                            btn.scrollIntoView();
+                            btn.scrollIntoView({behavior: 'smooth', block: 'center'});
+                            // Use multiple click methods
+                            btn.focus();
                             btn.click();
+                            // Also try dispatching a click event
+                            btn.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, view: window}));
+                            clicked = true;
                             break;
                         }
                     }
+                    return clicked;
                 ''')
+                if clicked:
+                    print("  ✓ JavaScript click executed")
+                    post_clicked = True
+            
+            # Extra wait and retry if Post button still visible
+            time.sleep(3)
+            dismiss_modal_dialogs(page)  # Handle any post-click modals
+            
+            still_has_post = page.locator('button:has-text("Post")').count() > 0
+            if still_has_post:
+                print("  ⚠️ Post button still visible, trying force click...")
+                dismiss_modal_dialogs(page)
+                page.locator('button:has-text("Post")').first.click(force=True, timeout=5000)
+                time.sleep(2)
             
             # Wait for post to complete (look for success indicators)
             print("  → Waiting for post confirmation...")
@@ -373,6 +530,31 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None) -> bool:
                 try:
                     page_content = page.content().lower()
                     current_url = page.url.lower()
+                    
+                    # Handle any modal dialogs that might be blocking
+                    if dismiss_modal_dialogs(page):
+                        print("  ⚠️ Modal dismissed during confirmation, re-clicking Post...")
+                        time.sleep(0.5)
+                        # Re-click Post button after dismissing modal
+                        try:
+                            post_retry = page.locator('button:has-text("Post")').first
+                            if post_retry.count() > 0 and post_retry.is_visible():
+                                post_retry.click(timeout=5000)
+                                print("  → Re-clicked Post button")
+                        except:
+                            pass
+                        continue
+                    
+                    # Handle "Continue editing" button specifically
+                    try:
+                        continue_btn = page.locator('button:has-text("Continue editing")')
+                        if continue_btn.count() > 0 and continue_btn.is_visible():
+                            print("  ⚠️ 'Continue editing' modal appeared, clicking...")
+                            continue_btn.click(timeout=3000)
+                            time.sleep(1)
+                            continue
+                    except:
+                        pass
                     
                     # Success indicators
                     if "your video is being uploaded" in page_content:
@@ -396,13 +578,20 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None) -> bool:
                         success = True
                         break
                     
+                    # Check if Post button changed to "Posting..." or disappeared
+                    post_btn_check = page.locator('button:has-text("Post")')
+                    posting_btn = page.locator('button:has-text("Posting")')
+                    
+                    if posting_btn.count() > 0:
+                        print("  → 'Posting...' detected, waiting...")
+                        continue
+                    
                     # Check if Post button is no longer loading (post complete)
                     # Look for the loading spinner being gone AND the page changing
                     spinner = page.locator('[class*="loading"], [class*="spinner"]')
-                    post_btn = page.locator('button:has-text("Post")')
                     
                     # If there's no spinner and no Post button, we likely succeeded
-                    if spinner.count() == 0 and post_btn.count() == 0:
+                    if spinner.count() == 0 and post_btn_check.count() == 0:
                         print("  ✓ Post button and spinner gone - likely posted!")
                         success = True
                         break
@@ -453,8 +642,8 @@ def setup_auth():
         {"name": "sessionid", "value": sessionid, "domain": ".tiktok.com", "path": "/"}
     ]
     
-    COOKIES_FILE.write_text(json.dumps(cookies, indent=2))
-    print(f"\n✅ Cookies saved to: {COOKIES_FILE}")
+    DEFAULT_COOKIES_FILE.write_text(json.dumps(cookies, indent=2))
+    print(f"\n✅ Cookies saved to: {DEFAULT_COOKIES_FILE}")
     print("   You can now upload videos!")
 
 

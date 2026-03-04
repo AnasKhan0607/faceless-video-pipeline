@@ -1,0 +1,71 @@
+{
+  "episode": "ep_016_20260303_100012",
+  "title": "Redis: The Fast Lane of Data!",
+  "topic": "What is Redis",
+  "duo": "peter_spongebob",
+  "background": "gta-gameplay",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's this Redis thing I keep hearing about?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Ah, Peter, think of Redis like a super-speedy filing cabinet!",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "stewie",
+      "line": "Instead of searching for hours, it's all right there, instantly.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 4,
+      "character": "peter",
+      "line": "So it's not just a place for my lost socks?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "No, no, it's an in-memory data structure store!",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "It keeps data in memory, making access lightning fast.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "And it helps with...?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Reducing database load, caching, real-time analytics, you name it!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "So, it's like my donut stash, always ready?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "Exactly, Peter, except less sticky and more useful!",
+      "pause_after_ms": 400
+    }
+  ],
+  "generated_at": "2026-03-03T10:00:12.781900",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_016_20260303_100012.png"
+}

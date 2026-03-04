@@ -22,12 +22,18 @@ import json
 
 # YouTube API scopes
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
-CLIENT_SECRETS_FILE = Path(__file__).parent / "client_secrets.json"
-TOKEN_FILE = Path(__file__).parent / ".youtube_token.json"
+DEFAULT_CLIENT_SECRETS_FILE = Path(__file__).parent / "client_secrets.json"
+DEFAULT_TOKEN_FILE = Path(__file__).parent / ".youtube_token.json"
 
 
-def get_authenticated_service():
-    """Get authenticated YouTube API service."""
+def get_authenticated_service(credentials_file: str = None):
+    """Get authenticated YouTube API service.
+    
+    Args:
+        credentials_file: Path to OAuth credentials/token file (optional).
+                         If provided, looks for token at same path with .token.json suffix.
+                         Falls back to default locations if not specified.
+    """
     try:
         from google.oauth2.credentials import Credentials
         from google_auth_oauthlib.flow import InstalledAppFlow
@@ -38,27 +44,53 @@ def get_authenticated_service():
         print("   pip install google-api-python-client google-auth-oauthlib")
         return None
     
+    # Determine which files to use
+    if credentials_file:
+        cred_path = Path(credentials_file)
+        # If the file is a token file (JSON with access_token), use it directly
+        # Otherwise treat it as client_secrets and derive token path
+        if cred_path.exists():
+            try:
+                data = json.loads(cred_path.read_text())
+                if "access_token" in data or "token" in data:
+                    # It's a token file
+                    token_file = cred_path
+                    client_secrets_file = DEFAULT_CLIENT_SECRETS_FILE
+                else:
+                    # It's a client_secrets file
+                    client_secrets_file = cred_path
+                    token_file = cred_path.parent / f".{cred_path.stem}_token.json"
+            except:
+                client_secrets_file = cred_path
+                token_file = cred_path.parent / f".{cred_path.stem}_token.json"
+        else:
+            client_secrets_file = cred_path
+            token_file = cred_path.parent / f".{cred_path.stem}_token.json"
+    else:
+        client_secrets_file = DEFAULT_CLIENT_SECRETS_FILE
+        token_file = DEFAULT_TOKEN_FILE
+    
     creds = None
     
     # Load existing token
-    if TOKEN_FILE.exists():
-        creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
+    if token_file.exists():
+        creds = Credentials.from_authorized_user_file(str(token_file), SCOPES)
     
     # Refresh or get new token
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            if not CLIENT_SECRETS_FILE.exists():
-                print(f"❌ Client secrets not found: {CLIENT_SECRETS_FILE}")
+            if not client_secrets_file.exists():
+                print(f"❌ Client secrets not found: {client_secrets_file}")
                 print("   Download from Google Cloud Console > APIs & Services > Credentials")
                 return None
             
-            flow = InstalledAppFlow.from_client_secrets_file(str(CLIENT_SECRETS_FILE), SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(str(client_secrets_file), SCOPES)
             creds = flow.run_local_server(port=0)
         
         # Save token for future use
-        TOKEN_FILE.write_text(creds.to_json())
+        token_file.write_text(creds.to_json())
     
     return build("youtube", "v3", credentials=creds)
 
@@ -69,9 +101,20 @@ def upload_video(
     description: str = "",
     tags: list[str] = None,
     category: str = "28",  # Science & Technology
-    privacy: str = "public"
+    privacy: str = "public",
+    credentials_file: str = None
 ) -> bool:
-    """Upload a video to YouTube as a Short."""
+    """Upload a video to YouTube as a Short.
+    
+    Args:
+        video_path: Path to the video file
+        title: Video title
+        description: Video description
+        tags: List of tags
+        category: YouTube category ID (default: Science & Technology)
+        privacy: Privacy setting (public, private, unlisted)
+        credentials_file: Path to OAuth credentials file (optional, uses default if not specified)
+    """
     
     video_path = Path(video_path)
     if not video_path.exists():
@@ -84,7 +127,7 @@ def upload_video(
         print("❌ Google API not installed. Run: pip install google-api-python-client")
         return False
     
-    youtube = get_authenticated_service()
+    youtube = get_authenticated_service(credentials_file)
     if not youtube:
         return False
     
