@@ -93,12 +93,14 @@
     {
       "id": 16,
       "topic": "What is Redis",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-03T15:00:42.836031"
     },
     {
       "id": 17,
       "topic": "What is a load balancer",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-03T23:00:43.418966"
     },
     {
       "id": 18,

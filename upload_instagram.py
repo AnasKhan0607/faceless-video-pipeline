@@ -16,21 +16,30 @@ import json
 import sys
 from pathlib import Path
 
-SESSION_FILE = Path(__file__).parent / "instagram_session.json"
+DEFAULT_SESSION_FILE = Path(__file__).parent / "instagram_session.json"
 
 
-def login_instagram(username: str = None, password: str = None):
-    """Login to Instagram and save session."""
+def login_instagram(username: str = None, password: str = None, session_file: str = None):
+    """Login to Instagram and save session.
+    
+    Args:
+        username: Instagram username (for fresh login)
+        password: Instagram password (for fresh login)
+        session_file: Path to session file (optional, uses default if not specified)
+    """
     from instagrapi import Client
     
     cl = Client()
     
+    # Determine which session file to use
+    sess_path = Path(session_file) if session_file else DEFAULT_SESSION_FILE
+    
     # Try to load existing session
-    if SESSION_FILE.exists() and not username:
+    if sess_path.exists() and not username:
         try:
-            cl.load_settings(SESSION_FILE)
+            cl.load_settings(sess_path)
             cl.login_by_sessionid(cl.settings.get('authorization_data', {}).get('sessionid', ''))
-            print("✅ Logged in from saved session")
+            print(f"✅ Logged in from saved session ({sess_path.name})")
             return cl
         except Exception as e:
             print(f"⚠️ Session expired: {e}")
@@ -41,13 +50,20 @@ def login_instagram(username: str = None, password: str = None):
     
     print(f"🔐 Logging in as {username}...")
     cl.login(username, password)
-    cl.dump_settings(SESSION_FILE)
+    cl.dump_settings(sess_path)
     print("✅ Logged in and session saved")
     return cl
 
 
-def upload_reel(video_path: str, caption: str, thumbnail_path: str = None) -> bool:
-    """Upload a video to Instagram Reels."""
+def upload_reel(video_path: str, caption: str, thumbnail_path: str = None, session_file: str = None) -> bool:
+    """Upload a video to Instagram Reels.
+    
+    Args:
+        video_path: Path to the video file
+        caption: Reel caption
+        thumbnail_path: Path to custom thumbnail (optional)
+        session_file: Path to session file (optional, uses default if not specified)
+    """
     from instagrapi import Client
     from instagrapi.types import StorySticker
     
@@ -56,19 +72,25 @@ def upload_reel(video_path: str, caption: str, thumbnail_path: str = None) -> bo
         print(f"❌ Video not found: {video_path}")
         return False
     
+    # Determine which session file to use
+    sess_path = Path(session_file) if session_file else DEFAULT_SESSION_FILE
+    
     print(f"📤 Uploading to Instagram Reels...")
     print(f"   Video: {video_path}")
     print(f"   Caption: {caption[:60]}...")
+    if session_file:
+        print(f"   Session: {sess_path.name}")
     
     try:
         cl = Client()
         
         # Load session
-        if not SESSION_FILE.exists():
-            print("❌ Not logged in. Run: python upload_instagram.py --setup")
+        if not sess_path.exists():
+            print(f"❌ Not logged in. Session file not found: {sess_path}")
+            print("   Run: python upload_instagram.py --setup")
             return False
         
-        cl.load_settings(SESSION_FILE)
+        cl.load_settings(sess_path)
         cl.login_by_sessionid(cl.settings.get('authorization_data', {}).get('sessionid', ''))
         
         # Upload as reel
@@ -113,9 +135,9 @@ def setup_auth():
     try:
         cl = Client()
         cl.login(username, password)
-        cl.dump_settings(SESSION_FILE)
+        cl.dump_settings(DEFAULT_SESSION_FILE)
         print(f"\n✅ Logged in as @{username}")
-        print(f"   Session saved to: {SESSION_FILE}")
+        print(f"   Session saved to: {DEFAULT_SESSION_FILE}")
         print("   You can now upload reels!")
     except Exception as e:
         print(f"\n❌ Login failed: {e}")

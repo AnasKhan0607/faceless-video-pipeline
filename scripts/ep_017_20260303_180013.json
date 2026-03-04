@@ -1,0 +1,71 @@
+{
+  "episode": "ep_017_20260303_180013",
+  "title": "Load Balancers: The Traffic Cops of the Internet",
+  "topic": "What is a load balancer",
+  "duo": "rogan_trump",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what the heck is a load balancer?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Think of it as a traffic cop for server requests, Peter.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "Traffic cop? Is it writing tickets to websites?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "No, you dolt! It distributes incoming network traffic evenly.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "That way, no single server gets overwhelmed.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 6,
+      "character": "peter",
+      "line": "Ah, so it keeps servers from crashing like my diet plan.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "stewie",
+      "line": "Precisely! It's crucial for high-traffic sites like online stores.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "peter",
+      "line": "So when too many people want my famous burgers, it helps?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "stewie",
+      "line": "Exactly, Peter. It prevents server meltdowns and keeps users happy.",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 10,
+      "character": "peter",
+      "line": "Good, because I melt when I\u2019m unhappy!",
+      "pause_after_ms": 400
+    }
+  ],
+  "generated_at": "2026-03-03T18:00:13.708712",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_017_20260303_180013.png"
+}

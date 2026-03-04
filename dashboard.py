@@ -1626,8 +1626,94 @@ with tab5b:
     
     st.markdown("---")
     
-    # ==================== CLEANUP ====================
-    st.markdown("### 🧹 Cleanup")
+    # ==================== AUTO CLEANUP ====================
+    st.markdown("### 🧹 Auto Cleanup")
+    
+    # Import cleanup module
+    try:
+        from cleanup import get_storage_stats, find_old_files, cleanup, get_last_cleanup
+        cleanup_available = True
+    except ImportError:
+        cleanup_available = False
+    
+    if cleanup_available:
+        # Cleanup configuration
+        col1, col2, col3 = st.columns([1, 1, 2])
+        
+        with col1:
+            retention_days = st.number_input(
+                "Retention (days)",
+                min_value=1,
+                max_value=90,
+                value=14,
+                help="Delete files older than this many days"
+            )
+        
+        with col2:
+            keep_scripts = st.checkbox("Keep Scripts", value=False, help="Don't delete script JSON files")
+        
+        with col3:
+            last_cleanup = get_last_cleanup()
+            if last_cleanup:
+                last_date = datetime.fromisoformat(last_cleanup["timestamp"]).strftime("%Y-%m-%d %H:%M")
+                last_freed = last_cleanup.get("total_freed_mb", 0)
+                st.info(f"Last cleanup: {last_date} — Freed {last_freed:.1f} MB")
+            else:
+                st.info("No cleanup history yet")
+        
+        # Show what would be deleted
+        old_files = find_old_files(max_age_days=retention_days)
+        total_old = sum(len(files) for files in old_files.values())
+        
+        # Preview table
+        st.markdown(f"#### Files older than {retention_days} days:")
+        
+        preview_col1, preview_col2, preview_col3, preview_col4 = st.columns(4)
+        with preview_col1:
+            st.metric("📹 Videos", len(old_files["videos"]))
+        with preview_col2:
+            st.metric("🎵 Audio", len(old_files["audio"]))
+        with preview_col3:
+            st.metric("📝 Scripts", len(old_files["scripts"]) if not keep_scripts else "0 (kept)")
+        with preview_col4:
+            st.metric("🖼️ Images", len(old_files["topic_images"]))
+        
+        # Action buttons
+        action_col1, action_col2, action_col3 = st.columns([2, 2, 1])
+        
+        with action_col1:
+            if total_old > 0:
+                if st.button(f"🗑️ Delete {total_old} Old Files", use_container_width=True, type="primary"):
+                    result = cleanup(
+                        max_age_days=retention_days,
+                        execute=True,
+                        keep_scripts=keep_scripts
+                    )
+                    freed_mb = result.get("total_freed_mb", 0)
+                    st.success(f"✅ Cleanup complete! Freed {freed_mb:.1f} MB")
+                    st.rerun()
+            else:
+                st.button("✓ Nothing to clean", use_container_width=True, disabled=True)
+        
+        with action_col2:
+            if st.button("🔍 Dry Run", use_container_width=True):
+                result = cleanup(
+                    max_age_days=retention_days,
+                    execute=False,
+                    keep_scripts=keep_scripts
+                )
+                st.json(result["deleted"])
+        
+        with action_col3:
+            if st.button("🔄 Refresh", use_container_width=True):
+                st.rerun()
+    else:
+        st.error("Cleanup module not found. Run: `python cleanup.py --help`")
+    
+    st.markdown("---")
+    
+    # ==================== QUICK CLEANUP ====================
+    st.markdown("### ⚡ Quick Cleanup")
     
     col1, col2, col3 = st.columns(3)
     
@@ -1673,11 +1759,6 @@ with tab5b:
                 st.rerun()
         else:
             st.write("**Videos >7 days:** 0")
-    
-    # Refresh button
-    st.markdown("---")
-    if st.button("🔄 Refresh Stats", use_container_width=True):
-        st.rerun()
 
 # ==================== TAB 6: LOGS ====================
 with tab6:
