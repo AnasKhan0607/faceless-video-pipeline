@@ -272,7 +272,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==================== TABS ====================
-tab1, tab2, tab2b, tab3, tab4, tab5, tab5b, tab6, tab7, tab8 = st.tabs(["📊 Overview", "📹 Videos", "📋 Queue", "📝 Scripts", "📈 Analytics", "💰 Costs", "💾 Resources", "🚨 Logs", "⚙️ Settings", "👥 Accounts"])
+tab1, tab2, tab2b, tab3, tab4, tab5, tab5b, tab6, tab7, tab8, tab9 = st.tabs(["📊 Overview", "📹 Videos", "📋 Queue", "📝 Scripts", "📈 Analytics", "💰 Costs", "💾 Resources", "🚨 Logs", "⚙️ Settings", "👥 Accounts", "✂️ Editor"])
 
 # ==================== TAB 1: OVERVIEW ====================
 with tab1:
@@ -2786,6 +2786,151 @@ with tab8:
         accounts_data["settings"]["parallel_uploads"] = parallel_uploads
         save_accounts(accounts_data)
         st.success("Settings saved!")
+
+# ==================== TAB 9: EDITOR ====================
+with tab9:
+    st.markdown("### ✂️ AI Video Editor")
+    st.markdown("Edit videos using natural language prompts powered by AI + FFmpeg.")
+    
+    # Import video editor
+    try:
+        from video_editor import edit_video, get_video_info, get_edit_history, PRESETS, EDITED_DIR
+        editor_available = True
+    except ImportError:
+        editor_available = False
+        st.error("Video editor module not found!")
+    
+    if editor_available:
+        # Video selector
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            # Get all videos
+            all_videos = sorted(OUT_DIR.glob("*_final.mp4"), key=lambda x: x.stat().st_mtime, reverse=True)
+            edited_videos = sorted(EDITED_DIR.glob("*.mp4"), key=lambda x: x.stat().st_mtime, reverse=True) if EDITED_DIR.exists() else []
+            
+            video_options = ["Select a video..."]
+            video_options += [f"📹 {v.name}" for v in all_videos[:20]]
+            if edited_videos:
+                video_options += ["---"]
+                video_options += [f"✂️ {v.name}" for v in edited_videos[:10]]
+            
+            selected = st.selectbox("Select Video", video_options)
+        
+        with col2:
+            if selected and selected != "Select a video..." and selected != "---":
+                # Parse selection
+                video_name = selected.split(" ", 1)[1] if " " in selected else selected
+                if selected.startswith("✂️"):
+                    video_path = EDITED_DIR / video_name
+                else:
+                    video_path = OUT_DIR / video_name
+                
+                if video_path.exists():
+                    info = get_video_info(video_path)
+                    st.metric("Duration", f"{info.get('duration', 0):.1f}s")
+                    st.caption(f"{info.get('width')}x{info.get('height')} • {info.get('size_mb', 0):.1f}MB")
+        
+        st.markdown("---")
+        
+        # Edit interface
+        if selected and selected != "Select a video..." and selected != "---":
+            video_name = selected.split(" ", 1)[1] if " " in selected else selected
+            if selected.startswith("✂️"):
+                video_path = EDITED_DIR / video_name
+            else:
+                video_path = OUT_DIR / video_name
+            
+            # Two columns: presets and custom
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("#### 🎯 Quick Presets")
+                preset_cols = st.columns(2)
+                
+                preset_list = list(PRESETS.items())
+                for i, (key, desc) in enumerate(preset_list):
+                    with preset_cols[i % 2]:
+                        if st.button(desc[:30] + "..." if len(desc) > 30 else desc, key=f"preset_{key}", use_container_width=True):
+                            st.session_state['edit_prompt'] = desc
+            
+            with col2:
+                st.markdown("#### ✏️ Custom Edit")
+                prompt = st.text_area(
+                    "Describe your edit",
+                    value=st.session_state.get('edit_prompt', ''),
+                    placeholder="e.g., 'Add text FOLLOW at bottom for last 3 seconds'",
+                    height=100
+                )
+                
+                # Clear prompt from session state after using
+                if 'edit_prompt' in st.session_state:
+                    del st.session_state['edit_prompt']
+            
+            # Action buttons
+            st.markdown("---")
+            btn_col1, btn_col2, btn_col3 = st.columns([2, 2, 1])
+            
+            with btn_col1:
+                dry_run = st.button("🔍 Preview Command", use_container_width=True, disabled=not prompt)
+            
+            with btn_col2:
+                execute = st.button("✂️ Apply Edit", use_container_width=True, type="primary", disabled=not prompt)
+            
+            with btn_col3:
+                st.caption("Output saved to edited/")
+            
+            # Execute
+            if dry_run and prompt:
+                with st.spinner("Generating FFmpeg command..."):
+                    result = edit_video(str(video_path), prompt, dry_run=True)
+                
+                if result.get("success"):
+                    st.success(f"**Command preview:**")
+                    st.code(" ".join(result.get("command", [])), language="bash")
+                    st.info(f"📝 {result.get('description', '')}")
+                else:
+                    st.error(f"Error: {result.get('error')}")
+            
+            if execute and prompt:
+                with st.spinner("Applying edit... This may take a moment."):
+                    result = edit_video(str(video_path), prompt)
+                
+                if result.get("success"):
+                    st.success(f"✅ Edit complete!")
+                    st.write(f"**Output:** `{result.get('output_path')}`")
+                    st.write(f"**Size:** {result.get('size_mb', 0):.1f} MB")
+                    
+                    # Show video preview
+                    output_path = Path(result.get('output_path'))
+                    if output_path.exists():
+                        st.video(str(output_path))
+                else:
+                    st.error(f"❌ Edit failed: {result.get('error')}")
+                    if result.get('command'):
+                        st.code(" ".join(result.get('command', [])), language="bash")
+            
+            # Video preview
+            st.markdown("---")
+            st.markdown("#### 📺 Current Video Preview")
+            if video_path.exists():
+                st.video(str(video_path))
+        
+        else:
+            st.info("👆 Select a video to start editing")
+        
+        # Edit history
+        st.markdown("---")
+        st.markdown("### 📜 Edit History")
+        
+        history = get_edit_history()
+        if history:
+            history_df = pd.DataFrame(history[-10:][::-1])  # Last 10, newest first
+            if 'timestamp' in history_df.columns:
+                history_df['timestamp'] = pd.to_datetime(history_df['timestamp']).dt.strftime('%m/%d %H:%M')
+            st.dataframe(history_df[['timestamp', 'input', 'prompt', 'output']], use_container_width=True)
+        else:
+            st.caption("No edits yet. Make your first edit above!")
 
 # ==================== FOOTER ====================
 st.markdown("---")

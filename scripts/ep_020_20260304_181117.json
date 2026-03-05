@@ -1,0 +1,71 @@
+{
+  "episode": "ep_020_20260304_181117",
+  "title": "Understanding OAuth with Peter and Stewie",
+  "topic": "What is OAuth",
+  "duo": "morgan_spongebob",
+  "background": "gta-gameplay",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Hey Stewie, what's this OAuth thing everyone's talking about?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Think of OAuth as a valet key for apps, Peter.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "A valet key? Does it park my data somewhere fancy?",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "Sort of! It lets apps access some data without giving full access.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "OAuth is a protocol; it delegates access safely without sharing passwords.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "Apps get a token, like a ticket, to access specific info.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "Oh, so it's like a movie pass but for my data?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Precisely! Websites like Facebook use OAuth to let apps post for you.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 9,
+      "character": "stewie",
+      "line": "You stay secure, and apps do the heavy lifting.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 10,
+      "character": "peter",
+      "line": "Got it! OAuth: the hero my password deserves!",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-04T18:11:17.321162",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_020_20260304_181117.png"
+}

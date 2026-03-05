@@ -1,0 +1,65 @@
+{
+  "episode": "ep_019_20260304_180012",
+  "title": "Peter & Stewie Decode HTTPS",
+  "topic": "What is HTTPS",
+  "duo": "morgan_stewie",
+  "background": "minecraft-parkour",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's this HTTPS thingy?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Peter, think of HTTPS as a security blanket for websites.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 3,
+      "character": "stewie",
+      "line": "It's like sending secret letters, only the recipient can read.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "Technically, HTTPS encrypts data between your browser and server.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "It uses SSL or TLS protocols to secure communication.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "That means hackers can't intercept your passwords or info.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "So when I shop online, they can't steal my credit card?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Precisely, unless it's from 'SketchySteve'sStore.com'.",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "I'll stick to 'SafeStewie'sStore.com' then!",
+      "pause_after_ms": 400
+    }
+  ],
+  "generated_at": "2026-03-04T18:00:12.227276",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_019_20260304_180012.png"
+}
