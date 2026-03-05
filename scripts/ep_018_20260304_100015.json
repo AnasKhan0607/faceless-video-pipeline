@@ -1,0 +1,77 @@
+{
+  "episode": "ep_018_20260304_100015",
+  "title": "What's DNS? Stewie Explains to Peter!",
+  "topic": "What is DNS",
+  "duo": "stewie_morgan",
+  "background": "minecraft-parkour",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's this DNS thing everyone talks about?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Think of DNS like a phonebook for the internet, Peter.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "A phonebook? Does it have the number for pizza?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "DNS translates website names to IP addresses, like numbers to contacts.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "Computers use these IPs to find where sites live online.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "So, when you type a URL, DNS directs you to the right server!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "Oh, like how I find Meg in the house\u2014by her smell!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Exactly, but far less traumatic for the servers.",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "So, no DNS means no funny cat videos?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "Precisely! DNS keeps the chaos organized.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 11,
+      "character": "stewie",
+      "line": "Without it, even you'd struggle to misplace things, Peter.",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-04T10:00:15.472678",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_018_20260304_100015.png"
+}

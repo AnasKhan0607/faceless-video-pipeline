@@ -105,12 +105,14 @@
     {
       "id": 18,
       "topic": "What is DNS",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-04T15:00:58.123326"
     },
     {
       "id": 19,
       "topic": "What is HTTPS",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-04T23:00:49.752063"
     },
     {
       "id": 20,

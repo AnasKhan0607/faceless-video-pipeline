@@ -100,7 +100,7 @@ def dismiss_modal_dialogs(page):
         
         # Also try JavaScript fallback to close any modal
         if not modal_handled:
-            closed = page.evaluate('''
+            closed = page.evaluate('''(() => {
                 // Look for modal backdrop or container
                 const modals = document.querySelectorAll('[class*="modal"], [class*="Modal"], [role="dialog"]');
                 let closed = false;
@@ -125,7 +125,7 @@ def dismiss_modal_dialogs(page):
                     }
                 }
                 return closed;
-            ''')
+            })()''')
             if closed:
                 print("  ✓ Dismissed modal via JavaScript")
                 modal_handled = True
@@ -487,7 +487,7 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None, cookies_
                 ''')
                 time.sleep(0.3)
                 
-                clicked = page.evaluate('''
+                clicked = page.evaluate('''(() => {
                     // Find all buttons
                     const btns = document.querySelectorAll('button');
                     let clicked = false;
@@ -506,7 +506,7 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None, cookies_
                         }
                     }
                     return clicked;
-                ''')
+                })()''')
                 if clicked:
                     print("  ✓ JavaScript click executed")
                     post_clicked = True
