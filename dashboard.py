@@ -1705,7 +1705,7 @@ with tab5b:
                 st.json(result["deleted"])
         
         with action_col3:
-            if st.button("🔄 Refresh", use_container_width=True):
+            if st.button("🔄 Refresh", use_container_width=True, key="cleanup_refresh"):
                 st.rerun()
     else:
         st.error("Cleanup module not found. Run: `python cleanup.py --help`")
@@ -1778,7 +1778,7 @@ with tab6:
         
         with col2:
             auto_refresh = st.checkbox("Auto-refresh (5s)", value=False)
-            if st.button("🔄 Refresh", use_container_width=True):
+            if st.button("🔄 Refresh", use_container_width=True, key="logs_refresh"):
                 st.rerun()
             if st.button("🗑️ Clear Log", use_container_width=True):
                 if LIVE_LOG_FILE.exists():
