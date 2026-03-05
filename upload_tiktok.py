@@ -100,36 +100,35 @@ def dismiss_modal_dialogs(page):
         
         # Also try JavaScript fallback to close any modal
         if not modal_handled:
-            closed = page.evaluate('''(() => {
-                // Look for modal backdrop or container
-                const modals = document.querySelectorAll('[class*="modal"], [class*="Modal"], [role="dialog"]');
-                let closed = false;
-                for (const modal of modals) {
-                    const text = modal.textContent || '';
-                    if (text.includes('exit') || text.includes('leave') || text.includes('discard')) {
-                        // Find Cancel/Stay button inside
-                        const cancelBtn = modal.querySelector('button');
-                        if (cancelBtn) {
-                            const btnText = cancelBtn.textContent.toLowerCase();
-                            // Click the first button that's NOT the destructive action
-                            const buttons = modal.querySelectorAll('button');
-                            for (const btn of buttons) {
-                                const t = btn.textContent.toLowerCase();
-                                if (t.includes('cancel') || t.includes('stay') || t.includes('continue') || t.includes('no')) {
+            try:
+                closed = page.evaluate('''(function() {
+                    var modals = document.querySelectorAll('[class*="modal"], [class*="Modal"], [role="dialog"]');
+                    var closed = false;
+                    for (var i = 0; i < modals.length; i++) {
+                        var modal = modals[i];
+                        var text = modal.textContent || '';
+                        if (text.indexOf('exit') !== -1 || text.indexOf('leave') !== -1 || text.indexOf('discard') !== -1) {
+                            var buttons = modal.querySelectorAll('button');
+                            for (var j = 0; j < buttons.length; j++) {
+                                var btn = buttons[j];
+                                var t = (btn.textContent || '').toLowerCase();
+                                if (t.indexOf('cancel') !== -1 || t.indexOf('stay') !== -1 || t.indexOf('continue') !== -1 || t.indexOf('no') !== -1) {
                                     btn.click();
                                     closed = true;
                                     break;
                                 }
                             }
                         }
+                        if (closed) break;
                     }
-                }
-                return closed;
-            })()''')
-            if closed:
-                print("  ✓ Dismissed modal via JavaScript")
-                modal_handled = True
-                time.sleep(0.5)
+                    return closed;
+                })()''')
+                if closed:
+                    print("  ✓ Dismissed modal via JavaScript")
+                    modal_handled = True
+                    time.sleep(0.5)
+            except Exception as js_err:
+                print(f"  ⚠️ JS modal dismiss failed (non-fatal): {js_err}")
                 
     except Exception as e:
         print(f"  ⚠️ Modal dismiss error (non-fatal): {e}")
@@ -469,37 +468,39 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None, cookies_
                 # Fallback to JavaScript - find and click the Post button
                 print("  ⚠️ Trying JavaScript click...")
                 # First dismiss modals via JS
-                page.evaluate('''
-                    // Close any modal overlays first
-                    document.querySelectorAll('[class*="modal"], [class*="Modal"], [role="dialog"]').forEach(el => {
-                        const cancelBtn = el.querySelector('button');
-                        if (cancelBtn && el.textContent.includes('exit')) {
-                            const buttons = el.querySelectorAll('button');
-                            for (const btn of buttons) {
-                                if (btn.textContent.toLowerCase().includes('cancel') || 
-                                    btn.textContent.toLowerCase().includes('stay')) {
-                                    btn.click();
-                                    break;
+                try:
+                    page.evaluate('''(function() {
+                        var modals = document.querySelectorAll('[class*="modal"], [class*="Modal"], [role="dialog"]');
+                        for (var i = 0; i < modals.length; i++) {
+                            var el = modals[i];
+                            if (el.textContent && el.textContent.indexOf('exit') !== -1) {
+                                var buttons = el.querySelectorAll('button');
+                                for (var j = 0; j < buttons.length; j++) {
+                                    var btn = buttons[j];
+                                    var t = (btn.textContent || '').toLowerCase();
+                                    if (t.indexOf('cancel') !== -1 || t.indexOf('stay') !== -1) {
+                                        btn.click();
+                                        break;
+                                    }
                                 }
                             }
                         }
-                    });
-                ''')
+                    })()''')
+                except:
+                    pass
                 time.sleep(0.3)
                 
-                clicked = page.evaluate('''(() => {
-                    // Find all buttons
-                    const btns = document.querySelectorAll('button');
-                    let clicked = false;
-                    for (const btn of btns) {
-                        const text = btn.textContent.trim().toLowerCase();
+                clicked = page.evaluate('''(function() {
+                    var btns = document.querySelectorAll('button');
+                    var clicked = false;
+                    for (var i = 0; i < btns.length; i++) {
+                        var btn = btns[i];
+                        var text = (btn.textContent || '').trim().toLowerCase();
                         if (text === 'post' && !btn.disabled) {
                             console.log('Found Post button:', btn);
                             btn.scrollIntoView({behavior: 'smooth', block: 'center'});
-                            // Use multiple click methods
                             btn.focus();
                             btn.click();
-                            // Also try dispatching a click event
                             btn.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, view: window}));
                             clicked = true;
                             break;
