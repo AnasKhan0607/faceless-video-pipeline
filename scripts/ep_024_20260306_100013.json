@@ -1,0 +1,77 @@
+{
+  "episode": "ep_024_20260306_100013",
+  "title": "Big O Notation Explained by Family Guy",
+  "topic": "What is Big O notation",
+  "duo": "spongebob_morgan",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's this 'Big O' thing? Is it a new diet?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "No, you blockhead. It's about analyzing algorithms!",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "Algorithms? Like cooking recipes?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "Sort of, but Big O is like rating recipes by time taken.",
+      "pause_after_ms": 350
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "It describes how an algorithm's performance scales with input size.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "Big O focuses on the worst-case scenario for time or space.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "Sounds like my worst-case scenario is a burnt roast.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Imagine sorting socks. Linear time means sorting one at a time.",
+      "pause_after_ms": 350
+    },
+    {
+      "id": 9,
+      "character": "stewie",
+      "line": "Quadratic time? That\u2019s like checking each sock with every other sock.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "peter",
+      "line": "So, Big O helps avoid sock-tastrophes, huh?",
+      "pause_after_ms": 450
+    },
+    {
+      "id": 11,
+      "character": "stewie",
+      "line": "Precisely! Now if only you could avoid wardrobe malfunctions.",
+      "pause_after_ms": 400
+    }
+  ],
+  "generated_at": "2026-03-06T10:00:13.141374",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_024_20260306_100013.png"
+}

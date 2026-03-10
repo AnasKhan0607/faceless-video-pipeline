@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Video Pipeline Dashboard
-========================
-Track video generation, uploads, and analytics.
+Video Pipeline Dashboard v2.0
+=============================
+Cleaner, more intuitive interface for managing video generation.
 
 Run: streamlit run dashboard.py
 """
@@ -11,11 +11,13 @@ import streamlit as st
 import pandas as pd
 import json
 import os
+import subprocess
+import psutil
+import shutil
 from pathlib import Path
 from datetime import datetime, timedelta
 import plotly.express as px
 import plotly.graph_objects as go
-import base64
 
 # Import account manager
 from accounts import (
@@ -24,2919 +26,1077 @@ from accounts import (
     migrate_existing_credentials, CREDENTIALS_DIR
 )
 
-# Config
+# Config paths
 PIPELINE_DIR = Path(__file__).parent
 SCRIPTS_DIR = PIPELINE_DIR / "scripts"
 OUT_DIR = PIPELINE_DIR / "out"
 AUDIO_DIR = PIPELINE_DIR / "audio"
-TOPICS_FILE = PIPELINE_DIR / "niches" / "tech" / "topics.json"
-BACKGROUNDS_DIR = PIPELINE_DIR / "assets" / "backgrounds"
-TOPICS_IMG_DIR = PIPELINE_DIR / "assets" / "topics"
+NICHES_DIR = PIPELINE_DIR / "niches"
+CHARACTERS_DIR = PIPELINE_DIR / "characters"
+BACKGROUNDS_DIR = PIPELINE_DIR / "backgrounds"
 DEBUG_DIR = PIPELINE_DIR / "debug_screenshots"
 LOGS_DIR = PIPELINE_DIR / "logs"
-ERROR_LOG_FILE = LOGS_DIR / "errors.json"
+QUEUE_FILE = PIPELINE_DIR / "queue" / "pending.json"
+PERFORMANCE_FILE = PIPELINE_DIR / "analytics" / "performance.json"
 
-# Ensure logs directory exists
-LOGS_DIR.mkdir(exist_ok=True)
+# Ensure directories exist
+for d in [LOGS_DIR, PIPELINE_DIR / "queue", PIPELINE_DIR / "analytics"]:
+    d.mkdir(exist_ok=True)
 
-# Cost estimates (per video)
-COSTS = {
-    "openai_gpt4o": 0.01,  # Script generation
-    "fish_audio": 0.015,   # TTS
-    "deepgram": 0.005,     # Timestamps
-    "total_per_video": 0.03
-}
+# Cost per video
+COST_PER_VIDEO = 0.03
 
+# Page config
 st.set_page_config(
-    page_title="Video Pipeline Dashboard",
+    page_title="Video Pipeline",
     page_icon="🎬",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# Custom CSS for modern UI
+# ==================== CUSTOM CSS ====================
 st.markdown("""
 <style>
-    /* Import Google Font */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
-    /* Global styles */
+    /* Root variables */
+    :root {
+        --bg-primary: #0f0f0f;
+        --bg-secondary: #1a1a1a;
+        --bg-tertiary: #252525;
+        --accent: #6366f1;
+        --accent-hover: #818cf8;
+        --success: #22c55e;
+        --warning: #eab308;
+        --error: #ef4444;
+        --text-primary: #ffffff;
+        --text-secondary: #a1a1aa;
+        --border: #333;
+    }
+    
     .stApp {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Inter', -apple-system, sans-serif;
     }
     
-    /* Main header styling */
-    .main-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 2rem;
-        border-radius: 16px;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+    /* Hide default Streamlit elements */
+    #MainMenu, footer, header {visibility: hidden;}
+    
+    /* Sidebar styling */
+    section[data-testid="stSidebar"] {
+        background: var(--bg-secondary);
+        border-right: 1px solid var(--border);
     }
     
-    .main-header h1 {
-        color: white;
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin: 0;
+    section[data-testid="stSidebar"] .stRadio > label {
+        display: none;
     }
     
-    .main-header p {
-        color: rgba(255,255,255,0.8);
-        margin: 0.5rem 0 0 0;
+    section[data-testid="stSidebar"] .stRadio > div {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    section[data-testid="stSidebar"] .stRadio > div > label {
+        background: transparent;
+        padding: 12px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+    }
+    
+    section[data-testid="stSidebar"] .stRadio > div > label:hover {
+        background: var(--bg-tertiary);
+    }
+    
+    section[data-testid="stSidebar"] .stRadio > div > label[data-checked="true"] {
+        background: var(--accent);
     }
     
     /* Card styling */
-    .metric-card {
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        padding: 1.5rem;
+    .card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
         border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.1);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        padding: 20px;
+        margin-bottom: 16px;
     }
     
-    .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    .card-header {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
     
-    /* Status badges */
-    .status-badge {
+    .card-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    
+    .card-subtitle {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+    
+    /* Metric cards row */
+    .metrics-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    
+    /* Status pills */
+    .pill {
         display: inline-block;
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.85rem;
+        padding: 4px 12px;
+        border-radius: 100px;
+        font-size: 12px;
         font-weight: 500;
     }
     
-    .status-success {
-        background: rgba(46, 204, 113, 0.2);
-        color: #2ecc71;
-        border: 1px solid rgba(46, 204, 113, 0.3);
+    .pill-success { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+    .pill-warning { background: rgba(234, 179, 8, 0.15); color: var(--warning); }
+    .pill-error { background: rgba(239, 68, 68, 0.15); color: var(--error); }
+    .pill-neutral { background: var(--bg-tertiary); color: var(--text-secondary); }
+    
+    /* Section headers */
+    .section-header {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
     }
     
-    .status-warning {
-        background: rgba(241, 196, 15, 0.2);
-        color: #f1c40f;
-        border: 1px solid rgba(241, 196, 15, 0.3);
+    /* Quick action buttons */
+    .quick-actions {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
     }
     
-    .status-error {
-        background: rgba(231, 76, 60, 0.2);
-        color: #e74c3c;
-        border: 1px solid rgba(231, 76, 60, 0.3);
+    .action-btn {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        padding: 12px 20px;
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
     }
     
-    /* Tab styling */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background: rgba(255,255,255,0.05);
-        padding: 0.5rem;
+    .action-btn:hover {
+        background: var(--accent);
+        border-color: var(--accent);
+    }
+    
+    .action-btn-primary {
+        background: var(--accent);
+        border-color: var(--accent);
+    }
+    
+    /* Video grid */
+    .video-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+    }
+    
+    .video-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
         border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .video-thumb {
+        aspect-ratio: 9/16;
+        background: var(--bg-tertiary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .video-info {
+        padding: 12px;
+    }
+    
+    /* Table styling */
+    .dataframe {
+        border: none !important;
+    }
+    
+    .dataframe th {
+        background: var(--bg-tertiary) !important;
+        color: var(--text-secondary) !important;
+        font-weight: 500 !important;
+        text-transform: uppercase !important;
+        font-size: 11px !important;
+        letter-spacing: 0.5px !important;
+    }
+    
+    .dataframe td {
+        background: var(--bg-secondary) !important;
+        border-color: var(--border) !important;
+    }
+    
+    /* Tabs override */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0;
+        background: var(--bg-secondary);
+        border-radius: 8px;
+        padding: 4px;
+        border: 1px solid var(--border);
     }
     
     .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
-        padding: 0.5rem 1rem;
-        font-weight: 500;
+        border-radius: 6px;
+        padding: 8px 16px;
+        color: var(--text-secondary);
     }
     
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: var(--accent) !important;
+        color: white !important;
     }
     
-    /* Button styling */
+    /* Button overrides */
     .stButton > button {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
         border-radius: 8px;
+        color: var(--text-primary);
         font-weight: 500;
-        transition: all 0.2s ease;
+        padding: 8px 16px;
+        transition: all 0.2s;
     }
     
     .stButton > button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        background: var(--accent);
+        border-color: var(--accent);
     }
     
     .stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
+        background: var(--accent);
+        border-color: var(--accent);
     }
     
-    /* Input styling */
+    /* Input overrides */
     .stTextInput > div > div > input,
-    .stSelectbox > div > div > div,
-    .stNumberInput > div > div > input {
-        border-radius: 8px;
-        border: 1px solid rgba(255,255,255,0.1);
-        background: rgba(255,255,255,0.05);
+    .stTextArea > div > div > textarea,
+    .stSelectbox > div > div {
+        background: var(--bg-tertiary) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 8px !important;
+        color: var(--text-primary) !important;
     }
     
-    /* Expander styling */
+    /* Expander */
     .streamlit-expanderHeader {
-        background: rgba(255,255,255,0.05);
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
         border-radius: 8px;
-        font-weight: 500;
-    }
-    
-    /* Metric styling */
-    [data-testid="stMetricValue"] {
-        font-size: 2rem;
-        font-weight: 700;
-    }
-    
-    [data-testid="stMetricLabel"] {
-        font-weight: 500;
-        opacity: 0.8;
-    }
-    
-    /* Video thumbnail styling */
-    .video-thumbnail {
-        border-radius: 12px;
-        border: 2px solid rgba(255,255,255,0.1);
-        overflow: hidden;
-        transition: transform 0.2s ease;
-    }
-    
-    .video-thumbnail:hover {
-        transform: scale(1.02);
-    }
-    
-    /* Dataframe styling */
-    .stDataFrame {
-        border-radius: 12px;
-        overflow: hidden;
-    }
-    
-    /* Alert/Info box styling */
-    .stAlert {
-        border-radius: 12px;
-        border: none;
-    }
-    
-    /* Progress indicator */
-    .stProgress > div > div {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 10px;
-    }
-    
-    /* Divider */
-    hr {
-        border: none;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-        margin: 2rem 0;
-    }
-    
-    /* Code block styling */
-    .stCodeBlock {
-        border-radius: 12px;
-    }
-    
-    /* Sidebar if used */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
-    }
-    
-    /* Hide Streamlit branding */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-    
-    ::-webkit-scrollbar-track {
-        background: rgba(255,255,255,0.05);
-        border-radius: 4px;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-        background: rgba(255,255,255,0.2);
-        border-radius: 4px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-        background: rgba(255,255,255,0.3);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Header
-st.markdown("""
-<div class="main-header">
-    <h1>🎬 Video Pipeline</h1>
-    <p>Automated content generation for TikTok, YouTube & Instagram</p>
-</div>
-""", unsafe_allow_html=True)
 
-# ==================== TABS ====================
-tab1, tab2, tab2b, tab3, tab4, tab5, tab5b, tab6, tab7, tab8, tab9 = st.tabs(["📊 Overview", "📹 Videos", "📋 Queue", "📝 Scripts", "📈 Analytics", "💰 Costs", "💾 Resources", "🚨 Logs", "⚙️ Settings", "👥 Accounts", "✂️ Editor"])
+# ==================== HELPER FUNCTIONS ====================
 
-# ==================== TAB 1: OVERVIEW ====================
-with tab1:
-    # Metrics row
-    col1, col2, col3, col4, col5 = st.columns(5)
-    
-    scripts = list(SCRIPTS_DIR.glob("ep_*.json"))
-    videos = list(OUT_DIR.glob("*_final.mp4"))
-    
-    with col1:
-        st.metric("📝 Scripts", len(scripts))
-    
-    with col2:
-        st.metric("🎥 Videos", len(videos))
-    
-    # Topics
-    try:
-        topics_data = json.loads(TOPICS_FILE.read_text())
-        topics_used = sum(1 for t in topics_data.get("topics", []) if t.get("used"))
-        topics_total = len(topics_data.get("topics", []))
-    except:
-        topics_used, topics_total = 0, 0
-    
-    with col3:
-        st.metric("💡 Topics Left", topics_total - topics_used)
-    
-    # Backgrounds
-    backgrounds = list(BACKGROUNDS_DIR.glob("*.mp4"))
-    with col4:
-        st.metric("🎮 Backgrounds", len(backgrounds))
-    
-    # Estimated cost
-    total_cost = len(videos) * COSTS["total_per_video"]
-    with col5:
-        st.metric("💵 Total Cost", f"${total_cost:.2f}")
-    
-    st.markdown("---")
-    
-    # Active Accounts
-    st.subheader("👥 Active Accounts")
-    active_accounts = get_active_accounts()
-    
-    if active_accounts:
-        acc_cols = st.columns(min(len(active_accounts), 4))
-        for i, acc in enumerate(active_accounts[:4]):
-            with acc_cols[i]:
-                platforms_enabled = sum(1 for p, cfg in acc.get("platforms", {}).items() if cfg.get("enabled"))
-                st.markdown(f"""
-                <div class="metric-card" style="text-align: center;">
-                    <h4>{acc['name']}</h4>
-                    <p>{acc['niche'].title()}</p>
-                    <p>{platforms_enabled} platforms</p>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        if len(active_accounts) > 4:
-            st.caption(f"+{len(active_accounts) - 4} more accounts")
-    else:
-        st.info("No active accounts. Go to the Accounts tab to set one up!")
-    
-    st.markdown("---")
-    
-    # Platform Status (legacy - checks root files)
-    st.subheader("📱 Platform Status (Default Account)")
-    col1, col2, col3 = st.columns(3)
-    
-    # Check both legacy and new credential locations
-    with col1:
-        tiktok_auth = (PIPELINE_DIR / "tiktok_cookies.json").exists() or (CREDENTIALS_DIR / "tiktok_tech.json").exists()
-        if tiktok_auth:
-            st.success("✅ TikTok Connected")
-        else:
-            st.error("❌ TikTok Not Setup")
-    
-    with col2:
-        youtube_auth = (PIPELINE_DIR / ".youtube_token.json").exists() or (CREDENTIALS_DIR / "youtube_tech.json").exists()
-        if youtube_auth:
-            st.success("✅ YouTube Connected")
-        else:
-            st.error("❌ YouTube Not Setup")
-    
-    with col3:
-        instagram_auth = (PIPELINE_DIR / "instagram_session.json").exists() or (CREDENTIALS_DIR / "instagram_tech.json").exists()
-        if instagram_auth:
-            st.success("✅ Instagram Connected")
-        else:
-            st.error("❌ Instagram Not Setup")
-    
-    st.markdown("---")
-    
-    # Cron Jobs
-    st.subheader("⏰ Scheduled Posts")
-    st.info("""
-    | Job | Schedule | Status |
-    |-----|----------|--------|
-    | Morning Post | 10:00 AM daily | ✅ Enabled |
-    | Evening Post | 6:00 PM daily | ✅ Enabled |
-    """)
-    
-    st.markdown("---")
-    
-    # Quick Generate Section
-    st.subheader("🚀 Quick Generate")
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        # Generation options
-        gen_col1, gen_col2, gen_col3 = st.columns(3)
-        
-        with gen_col1:
-            num_videos = st.number_input("Videos to generate", min_value=1, max_value=10, value=1)
-        
-        with gen_col2:
-            # Load character duos
-            CHARACTERS_DIR = PIPELINE_DIR / "characters"
-            duos = [d.name for d in CHARACTERS_DIR.iterdir() if d.is_dir() and not d.name.startswith('.')]
-            selected_duo = st.selectbox("Character Duo", duos, index=duos.index("peter_stewie") if "peter_stewie" in duos else 0)
-        
-        with gen_col3:
-            upload_after = st.checkbox("Upload after generation", value=False)
-    
-    with col2:
-        st.markdown("")  # Spacing
-        st.markdown("")
-        
-        # Generate button
-        if st.button("🎬 Generate Video", type="primary", use_container_width=True):
-            # Store generation request in session state
-            st.session_state['generate_request'] = {
-                'num': num_videos,
-                'duo': selected_duo,
-                'upload': upload_after,
-                'started': True
-            }
-    
-    # Handle generation (outside the button to prevent rerun issues)
-    if st.session_state.get('generate_request', {}).get('started'):
-        req = st.session_state['generate_request']
-        st.session_state['generate_request'] = {}  # Clear request
-        
-        with st.status("🎬 Generating video...", expanded=True) as status:
-            import subprocess
-            import sys
-            
-            # Build command
-            cmd = [sys.executable, "auto_generate.py", "--count", str(req['num'])]
-            if req.get('upload'):
-                cmd.append("--upload")
-            
-            st.write(f"Running: `{' '.join(cmd)}`")
-            st.write(f"Character duo: {req['duo']}")
-            
-            try:
-                # Run the command
-                result = subprocess.run(
-                    cmd,
-                    cwd=str(PIPELINE_DIR),
-                    capture_output=True,
-                    text=True,
-                    timeout=300  # 5 minute timeout
-                )
-                
-                if result.returncode == 0:
-                    status.update(label="✅ Video generated!", state="complete")
-                    st.success("Video generated successfully!")
-                    
-                    # Show output
-                    with st.expander("Output"):
-                        st.code(result.stdout)
-                    
-                    # Refresh to show new video
-                    st.balloons()
-                else:
-                    status.update(label="❌ Generation failed", state="error")
-                    st.error("Generation failed!")
-                    with st.expander("Error Output"):
-                        st.code(result.stderr or result.stdout)
-                        
-            except subprocess.TimeoutExpired:
-                status.update(label="⏱️ Timeout", state="error")
-                st.error("Generation timed out after 5 minutes")
-            except Exception as e:
-                status.update(label="❌ Error", state="error")
-                st.error(f"Error: {e}")
-
-# ==================== TAB 2: VIDEOS ====================
-with tab2:
-    st.subheader("📹 Video Library")
-    
-    # View mode toggle
-    view_mode = st.radio("View Mode", ["🎬 Grid", "▶️ Player"], horizontal=True)
-    st.markdown("---")
-    
-    # Get all videos with their data
-    video_cards = []
-    for script_path in sorted(SCRIPTS_DIR.glob("ep_*.json"), reverse=True):
-        try:
-            script = json.loads(script_path.read_text())
-            ep_id = script_path.stem
-            
-            # Find matching video and thumbnail
-            video_files = list(OUT_DIR.glob(f"{ep_id}*.mp4"))
-            thumbnail_files = list(TOPICS_IMG_DIR.glob(f"{ep_id}*.png"))
-            
-            video_cards.append({
-                "ep_id": ep_id,
-                "title": script.get("title", "Unknown"),
-                "topic": script.get("topic", "Unknown"),
-                "script": script,
-                "video_path": video_files[0] if video_files else None,
-                "thumbnail_path": thumbnail_files[0] if thumbnail_files else None,
-                "created": datetime.fromtimestamp(script_path.stat().st_mtime)
+def get_videos():
+    """Get list of generated videos"""
+    videos = []
+    if OUT_DIR.exists():
+        for f in sorted(OUT_DIR.glob("*.mp4"), reverse=True):
+            stat = f.stat()
+            videos.append({
+                "file": f.name,
+                "path": str(f),
+                "size_mb": round(stat.st_size / 1024 / 1024, 1),
+                "created": datetime.fromtimestamp(stat.st_mtime),
+                "thumbnail": str(f) + ".jpg" if (Path(str(f) + ".jpg")).exists() else None
             })
-        except:
-            pass
-    
-    if view_mode == "▶️ Player":
-        # Video Player Mode
-        if video_cards:
-            # Video selector
-            video_options = {f"{v['ep_id']} - {v['topic'][:50]}": i for i, v in enumerate(video_cards) if v['video_path']}
-            
-            if video_options:
-                selected = st.selectbox("Select Video", list(video_options.keys()))
-                selected_video = video_cards[video_options[selected]]
-                
-                col1, col2 = st.columns([2, 1])
-                
-                with col1:
-                    # Video player
-                    st.markdown(f"### {selected_video['topic']}")
-                    if selected_video['video_path'] and selected_video['video_path'].exists():
-                        st.video(str(selected_video['video_path']))
-                        
-                        # Download button
-                        with open(selected_video['video_path'], 'rb') as f:
-                            st.download_button(
-                                label="⬇️ Download Video",
-                                data=f,
-                                file_name=selected_video['video_path'].name,
-                                mime="video/mp4"
-                            )
-                    else:
-                        st.error("Video file not found")
-                
-                with col2:
-                    # Video info
-                    st.markdown("### 📋 Info")
-                    if selected_video['video_path']:
-                        size_mb = selected_video['video_path'].stat().st_size / (1024 * 1024)
-                        st.write(f"**Size:** {size_mb:.1f} MB")
-                    st.write(f"**Created:** {selected_video['created'].strftime('%Y-%m-%d %H:%M')}")
-                    st.write(f"**Episode:** {selected_video['ep_id']}")
-                    
-                    # Thumbnail
-                    if selected_video['thumbnail_path'] and selected_video['thumbnail_path'].exists():
-                        st.markdown("### 🖼️ Thumbnail")
-                        st.image(str(selected_video['thumbnail_path']), use_container_width=True)
-                    
-                    # Script preview
-                    st.markdown("### 📝 Script")
-                    with st.expander("View Script"):
-                        for i, line in enumerate(selected_video['script'].get('lines', [])):
-                            st.write(f"**{line.get('character', 'Unknown')}:** {line.get('text', '')}")
-            else:
-                st.info("No rendered videos yet. Generate some videos first!")
-        else:
-            st.info("No videos generated yet. Run `python auto_generate.py --count 1`")
-    
-    else:
-        # Grid Mode (original)
-        if video_cards:
-            for i in range(0, len(video_cards), 3):
-                cols = st.columns(3)
-                for j, col in enumerate(cols):
-                    if i + j < len(video_cards):
-                        video = video_cards[i + j]
-                        with col:
-                            # Thumbnail
-                            if video["thumbnail_path"] and video["thumbnail_path"].exists():
-                                st.image(str(video["thumbnail_path"]), use_container_width=True)
-                            else:
-                                st.image("https://via.placeholder.com/300x400/333/fff?text=No+Thumbnail", use_container_width=True)
-                            
-                            st.markdown(f"**{video['title'][:40]}...**" if len(video['title']) > 40 else f"**{video['title']}**")
-                            st.caption(f"📅 {video['created'].strftime('%b %d, %H:%M')}")
-                            st.caption(f"💡 {video['topic']}")
-                            
-                            # Video status
-                            if video["video_path"]:
-                                size_mb = video["video_path"].stat().st_size / (1024 * 1024)
-                                st.success(f"✅ Rendered ({size_mb:.1f} MB)")
-                                # Play button in expander
-                                with st.expander("▶️ Play"):
-                                    st.video(str(video["video_path"]))
-                            else:
-                                st.warning("⏳ Not rendered")
-                            
-                            st.markdown("---")
-        else:
-            st.info("No videos generated yet. Run `python auto_generate.py --count 1`")
+    return videos
 
-# ==================== TAB 2B: QUEUE ====================
-QUEUE_FILE = LOGS_DIR / "upload_queue.json"
 
-def load_queue():
-    try:
-        if QUEUE_FILE.exists():
-            return json.loads(QUEUE_FILE.read_text())
-        return []
-    except:
-        return []
-
-def save_queue(queue):
-    QUEUE_FILE.write_text(json.dumps(queue, indent=2))
-
-with tab2b:
-    st.subheader("📋 Upload Queue")
-    
-    queue = load_queue()
-    
-    # Stats
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Queued", len(queue))
-    with col2:
-        pending = len([q for q in queue if q.get("status") == "pending"])
-        st.metric("Pending", pending)
-    with col3:
-        completed = len([q for q in queue if q.get("status") == "completed"])
-        st.metric("Completed", completed)
-    
-    st.markdown("---")
-    
-    # Add to queue
-    st.markdown("### ➕ Add Video to Queue")
-    
-    # Get available videos (rendered but not in queue)
-    queued_videos = [q.get("video_path") for q in queue]
-    available_videos = [v for v in OUT_DIR.glob("*_final.mp4") if str(v) not in queued_videos]
-    
-    if available_videos:
-        col1, col2, col3 = st.columns([2, 1, 1])
-        
-        with col1:
-            selected_video = st.selectbox(
-                "Select video",
-                available_videos,
-                format_func=lambda x: x.stem
-            )
-        
-        with col2:
-            platforms = st.multiselect(
-                "Platforms",
-                ["TikTok", "YouTube", "Instagram"],
-                default=["TikTok", "YouTube", "Instagram"]
-            )
-        
-        with col3:
-            st.markdown("")
-            st.markdown("")
-            if st.button("➕ Add to Queue", use_container_width=True):
-                if selected_video and platforms:
-                    # Get topic from script if available
-                    ep_id = selected_video.stem.split("_")[0] + "_" + selected_video.stem.split("_")[1]
-                    script_files = list(SCRIPTS_DIR.glob(f"{ep_id}*.json"))
-                    topic = "Unknown"
-                    if script_files:
-                        try:
-                            script = json.loads(script_files[0].read_text())
-                            topic = script.get("topic", "Unknown")
-                        except:
-                            pass
-                    
-                    queue.append({
-                        "id": datetime.now().strftime("%Y%m%d%H%M%S"),
-                        "video_path": str(selected_video),
-                        "topic": topic,
-                        "platforms": platforms,
-                        "status": "pending",
-                        "added_at": datetime.now().isoformat(),
-                        "priority": len(queue) + 1
+def get_scripts():
+    """Get list of script files"""
+    scripts = []
+    if SCRIPTS_DIR.exists():
+        for f in sorted(SCRIPTS_DIR.glob("*.json"), reverse=True):
+            try:
+                with open(f) as file:
+                    data = json.load(file)
+                    scripts.append({
+                        "file": f.name,
+                        "path": str(f),
+                        "topic": data.get("topic", "Unknown"),
+                        "characters": data.get("characters", []),
+                        "created": datetime.fromtimestamp(f.stat().st_mtime)
                     })
-                    save_queue(queue)
-                    st.success(f"Added to queue: {selected_video.stem}")
-                    st.rerun()
-    else:
-        st.info("No videos available to queue. All rendered videos are already queued or none exist.")
-    
-    st.markdown("---")
-    
-    # Queue list
-    st.markdown("### 📋 Queue")
-    
-    if queue:
-        # Filter
-        status_filter = st.selectbox("Filter by status", ["All", "Pending", "Completed", "Failed"])
-        
-        filtered_queue = queue
-        if status_filter != "All":
-            filtered_queue = [q for q in queue if q.get("status", "").lower() == status_filter.lower()]
-        
-        # Sort by priority
-        filtered_queue = sorted(filtered_queue, key=lambda x: x.get("priority", 999))
-        
-        for i, item in enumerate(filtered_queue):
-            status_icons = {"pending": "⏳", "completed": "✅", "failed": "❌", "uploading": "🔄"}
-            status = item.get("status", "pending")
-            icon = status_icons.get(status, "❓")
-            
-            col1, col2, col3, col4, col5 = st.columns([3, 2, 1, 1, 1])
-            
-            with col1:
-                st.write(f"{icon} **{item.get('topic', 'Unknown')[:40]}**")
-            
-            with col2:
-                platforms = ", ".join(item.get("platforms", []))
-                st.write(f"📱 {platforms}")
-            
-            with col3:
-                # Move up
-                if i > 0 and status == "pending":
-                    if st.button("⬆️", key=f"up_{item.get('id')}"):
-                        # Swap priorities
-                        prev_item = filtered_queue[i-1]
-                        for q in queue:
-                            if q.get("id") == item.get("id"):
-                                q["priority"] = prev_item.get("priority", i)
-                            elif q.get("id") == prev_item.get("id"):
-                                q["priority"] = item.get("priority", i+1)
-                        save_queue(queue)
-                        st.rerun()
-            
-            with col4:
-                # Move down
-                if i < len(filtered_queue) - 1 and status == "pending":
-                    if st.button("⬇️", key=f"down_{item.get('id')}"):
-                        next_item = filtered_queue[i+1]
-                        for q in queue:
-                            if q.get("id") == item.get("id"):
-                                q["priority"] = next_item.get("priority", i+2)
-                            elif q.get("id") == next_item.get("id"):
-                                q["priority"] = item.get("priority", i+1)
-                        save_queue(queue)
-                        st.rerun()
-            
-            with col5:
-                # Remove
-                if st.button("🗑️", key=f"remove_{item.get('id')}"):
-                    queue = [q for q in queue if q.get("id") != item.get("id")]
-                    save_queue(queue)
-                    st.rerun()
-        
-        st.markdown("---")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🗑️ Clear Completed", use_container_width=True):
-                queue = [q for q in queue if q.get("status") != "completed"]
-                save_queue(queue)
-                st.rerun()
-        with col2:
-            if st.button("🗑️ Clear All", use_container_width=True, type="secondary"):
-                save_queue([])
-                st.rerun()
-    else:
-        st.info("Queue is empty. Add videos above to schedule uploads.")
-
-# ==================== TAB 3: SCRIPTS ====================
-with tab3:
-    st.subheader("📝 Script Library")
-    
-    # Get all scripts
-    all_scripts = []
-    for script_path in sorted(SCRIPTS_DIR.glob("ep_*.json"), reverse=True):
-        try:
-            script = json.loads(script_path.read_text())
-            video_files = list(OUT_DIR.glob(f"{script_path.stem}*.mp4"))
-            all_scripts.append({
-                "path": script_path,
-                "ep_id": script_path.stem,
-                "topic": script.get("topic", "Unknown"),
-                "character_duo": script.get("character_duo", "Unknown"),
-                "lines": script.get("lines", []),
-                "created": datetime.fromtimestamp(script_path.stat().st_mtime),
-                "rendered": len(video_files) > 0
-            })
-        except:
-            pass
-    
-    if all_scripts:
-        # Filter options
-        col1, col2, col3 = st.columns([2, 1, 1])
-        with col1:
-            search = st.text_input("🔍 Search topics", "")
-        with col2:
-            filter_rendered = st.selectbox("Status", ["All", "Rendered", "Not Rendered"])
-        with col3:
-            sort_by = st.selectbox("Sort", ["Newest", "Oldest"])
-        
-        # Apply filters
-        filtered = all_scripts
-        if search:
-            filtered = [s for s in filtered if search.lower() in s["topic"].lower()]
-        if filter_rendered == "Rendered":
-            filtered = [s for s in filtered if s["rendered"]]
-        elif filter_rendered == "Not Rendered":
-            filtered = [s for s in filtered if not s["rendered"]]
-        if sort_by == "Oldest":
-            filtered = list(reversed(filtered))
-        
-        st.markdown(f"**Showing {len(filtered)} scripts**")
-        st.markdown("---")
-        
-        # Script list with preview
-        for script in filtered:
-            with st.expander(f"{'✅' if script['rendered'] else '⏳'} **{script['topic']}** ({script['ep_id']})"):
-                col1, col2 = st.columns([3, 1])
-                
-                with col1:
-                    st.markdown(f"**Character Duo:** {script['character_duo']}")
-                    st.markdown(f"**Created:** {script['created'].strftime('%Y-%m-%d %H:%M')}")
-                    st.markdown(f"**Lines:** {len(script['lines'])}")
-                    
-                    st.markdown("---")
-                    st.markdown("**📜 Full Script:**")
-                    
-                    for i, line in enumerate(script['lines']):
-                        character = line.get('character', 'Unknown')
-                        text = line.get('text', '')
-                        st.markdown(f"**{character}:** {text}")
-                
-                with col2:
-                    # Actions
-                    st.markdown("**Actions:**")
-                    
-                    if script['rendered']:
-                        st.success("✅ Rendered")
-                    else:
-                        st.warning("⏳ Not rendered")
-                        st.code(f"python pipeline_v2.py --script {script['path'].name}")
-                    
-                    # Raw JSON view
-                    with st.expander("📄 Raw JSON"):
-                        st.json(json.loads(script['path'].read_text()))
-                    
-                    # Estimated duration
-                    word_count = sum(len(line.get('text', '').split()) for line in script['lines'])
-                    est_duration = word_count / 2.5  # ~2.5 words per second
-                    st.write(f"⏱️ Est. duration: {est_duration:.0f}s")
-    else:
-        st.info("No scripts found. Generate one with: `python auto_generate.py --count 1`")
-
-# ==================== TAB 4: ANALYTICS ====================
-# Performance tracking file
-PERFORMANCE_FILE = LOGS_DIR / "video_performance.json"
-
-def load_performance():
-    try:
-        if PERFORMANCE_FILE.exists():
-            return json.loads(PERFORMANCE_FILE.read_text())
-        return {}
-    except:
-        return {}
-
-def save_performance(data):
-    PERFORMANCE_FILE.write_text(json.dumps(data, indent=2))
-
-with tab6:
-    st.subheader("📈 Analytics")
-    
-    # Analytics sub-tabs
-    analytics_tab1, analytics_tab2, analytics_tab3, analytics_tab4, analytics_tab5 = st.tabs([
-        "📊 Overview", "📱 TikTok", "▶️ YouTube", "⭐ Best Topics", "⏰ Best Times"
-    ])
-    
-    # Load performance data
-    perf_data = load_performance()
-    
-    # ==================== OVERVIEW ====================
-    with analytics_tab1:
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Generation timeline
-            st.markdown("### Videos Per Day")
-            timeline_data = []
-            for script_path in SCRIPTS_DIR.glob("ep_*.json"):
-                try:
-                    created = datetime.fromtimestamp(script_path.stat().st_mtime)
-                    timeline_data.append({"date": created.date(), "count": 1})
-                except:
-                    pass
-            
-            if timeline_data:
-                df_timeline = pd.DataFrame(timeline_data)
-                df_grouped = df_timeline.groupby("date").sum().reset_index()
-                fig = px.bar(df_grouped, x="date", y="count", 
-                            labels={"date": "Date", "count": "Videos"})
-                fig.update_layout(height=300)
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("No data yet")
-        
-        with col2:
-            # Topics usage
-            st.markdown("### Topics Status")
-            try:
-                topics_data = json.loads(TOPICS_FILE.read_text())
-                topics = topics_data.get("topics", [])
-                used = sum(1 for t in topics if t.get("used"))
-                unused = len(topics) - used
-                
-                fig = go.Figure(data=[go.Pie(
-                    labels=['Used', 'Available'],
-                    values=[used, unused],
-                    hole=.4,
-                    marker_colors=['#ff6b6b', '#4ecdc4']
-                )])
-                fig.update_layout(height=300, margin=dict(t=0, b=0, l=0, r=0))
-                st.plotly_chart(fig, use_container_width=True)
-            except:
-                st.info("No topics data")
-        
-        # Platform links
-        st.markdown("### 🔗 View on Platforms")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.link_button("📱 TikTok Studio", "https://www.tiktok.com/tiktokstudio/content")
-        with col2:
-            st.link_button("▶️ YouTube Studio", "https://studio.youtube.com")
-        with col3:
-            st.link_button("📸 Instagram", "https://www.instagram.com")
-    
-    # ==================== TIKTOK ANALYTICS ====================
-    with analytics_tab2:
-        st.markdown("### 📱 TikTok Performance")
-        
-        tiktok_data = perf_data.get("tiktok", {})
-        
-        # Summary metrics
-        col1, col2, col3, col4 = st.columns(4)
-        total_views = sum(v.get("views", 0) for v in tiktok_data.values())
-        total_likes = sum(v.get("likes", 0) for v in tiktok_data.values())
-        total_shares = sum(v.get("shares", 0) for v in tiktok_data.values())
-        
-        with col1:
-            st.metric("Total Views", f"{total_views:,}")
-        with col2:
-            st.metric("Total Likes", f"{total_likes:,}")
-        with col3:
-            st.metric("Total Shares", f"{total_shares:,}")
-        with col4:
-            st.metric("Videos Tracked", len(tiktok_data))
-        
-        st.markdown("---")
-        
-        # Add/Update video stats
-        st.markdown("#### ➕ Track Video Performance")
-        st.info("Manually enter stats from TikTok Studio to track performance.")
-        
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            # Select video
-            video_options = {f"{v.stem}": str(v) for v in OUT_DIR.glob("*_final.mp4")}
-            if video_options:
-                selected_vid = st.selectbox("Select Video", list(video_options.keys()), key="tt_vid")
-        
-        with col2:
-            tiktok_url = st.text_input("TikTok URL (optional)", key="tt_url")
-        
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            tt_views = st.number_input("Views", min_value=0, value=0, key="tt_views")
-        with col2:
-            tt_likes = st.number_input("Likes", min_value=0, value=0, key="tt_likes")
-        with col3:
-            tt_shares = st.number_input("Shares", min_value=0, value=0, key="tt_shares")
-        with col4:
-            st.markdown("")
-            st.markdown("")
-            if st.button("💾 Save Stats", key="save_tt", use_container_width=True):
-                if video_options and selected_vid:
-                    tiktok_data[selected_vid] = {
-                        "views": tt_views,
-                        "likes": tt_likes,
-                        "shares": tt_shares,
-                        "url": tiktok_url,
-                        "updated": datetime.now().isoformat()
-                    }
-                    perf_data["tiktok"] = tiktok_data
-                    save_performance(perf_data)
-                    st.success("Stats saved!")
-                    st.rerun()
-        
-        # Show tracked videos
-        if tiktok_data:
-            st.markdown("---")
-            st.markdown("#### 📊 Tracked Videos")
-            
-            sorted_vids = sorted(tiktok_data.items(), key=lambda x: x[1].get("views", 0), reverse=True)
-            
-            for vid_name, stats in sorted_vids[:10]:
-                col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
-                with col1:
-                    st.write(f"**{vid_name}**")
-                with col2:
-                    st.write(f"👀 {stats.get('views', 0):,}")
-                with col3:
-                    st.write(f"❤️ {stats.get('likes', 0):,}")
-                with col4:
-                    st.write(f"🔄 {stats.get('shares', 0):,}")
-    
-    # ==================== YOUTUBE ANALYTICS ====================
-    with analytics_tab3:
-        st.markdown("### ▶️ YouTube Performance")
-        
-        youtube_data = perf_data.get("youtube", {})
-        
-        # Summary metrics
-        col1, col2, col3, col4 = st.columns(4)
-        total_views = sum(v.get("views", 0) for v in youtube_data.values())
-        total_likes = sum(v.get("likes", 0) for v in youtube_data.values())
-        total_watch_hours = sum(v.get("watch_hours", 0) for v in youtube_data.values())
-        
-        with col1:
-            st.metric("Total Views", f"{total_views:,}")
-        with col2:
-            st.metric("Total Likes", f"{total_likes:,}")
-        with col3:
-            st.metric("Watch Hours", f"{total_watch_hours:.1f}")
-        with col4:
-            st.metric("Videos Tracked", len(youtube_data))
-        
-        st.markdown("---")
-        
-        # Add/Update video stats
-        st.markdown("#### ➕ Track Video Performance")
-        st.info("Manually enter stats from YouTube Studio to track performance.")
-        
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            video_options_yt = {f"{v.stem}": str(v) for v in OUT_DIR.glob("*_final.mp4")}
-            if video_options_yt:
-                selected_vid_yt = st.selectbox("Select Video", list(video_options_yt.keys()), key="yt_vid")
-        
-        with col2:
-            youtube_url = st.text_input("YouTube URL (optional)", key="yt_url")
-        
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            yt_views = st.number_input("Views", min_value=0, value=0, key="yt_views")
-        with col2:
-            yt_likes = st.number_input("Likes", min_value=0, value=0, key="yt_likes")
-        with col3:
-            yt_watch = st.number_input("Watch Hours", min_value=0.0, value=0.0, step=0.1, key="yt_watch")
-        with col4:
-            st.markdown("")
-            st.markdown("")
-            if st.button("💾 Save Stats", key="save_yt", use_container_width=True):
-                if video_options_yt and selected_vid_yt:
-                    youtube_data[selected_vid_yt] = {
-                        "views": yt_views,
-                        "likes": yt_likes,
-                        "watch_hours": yt_watch,
-                        "url": youtube_url,
-                        "updated": datetime.now().isoformat()
-                    }
-                    perf_data["youtube"] = youtube_data
-                    save_performance(perf_data)
-                    st.success("Stats saved!")
-                    st.rerun()
-        
-        # Show tracked videos
-        if youtube_data:
-            st.markdown("---")
-            st.markdown("#### 📊 Tracked Videos")
-            
-            sorted_vids = sorted(youtube_data.items(), key=lambda x: x[1].get("views", 0), reverse=True)
-            
-            for vid_name, stats in sorted_vids[:10]:
-                col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
-                with col1:
-                    st.write(f"**{vid_name}**")
-                with col2:
-                    st.write(f"👀 {stats.get('views', 0):,}")
-                with col3:
-                    st.write(f"❤️ {stats.get('likes', 0):,}")
-                with col4:
-                    st.write(f"⏱️ {stats.get('watch_hours', 0):.1f}h")
-    
-    # ==================== BEST TOPICS ====================
-    with analytics_tab4:
-        st.markdown("### ⭐ Best Performing Topics")
-        
-        # Combine TikTok and YouTube data to find best topics
-        all_perf = {}
-        
-        for vid_name, stats in perf_data.get("tiktok", {}).items():
-            if vid_name not in all_perf:
-                all_perf[vid_name] = {"tiktok_views": 0, "youtube_views": 0, "total": 0}
-            all_perf[vid_name]["tiktok_views"] = stats.get("views", 0)
-            all_perf[vid_name]["total"] += stats.get("views", 0)
-        
-        for vid_name, stats in perf_data.get("youtube", {}).items():
-            if vid_name not in all_perf:
-                all_perf[vid_name] = {"tiktok_views": 0, "youtube_views": 0, "total": 0}
-            all_perf[vid_name]["youtube_views"] = stats.get("views", 0)
-            all_perf[vid_name]["total"] += stats.get("views", 0)
-        
-        if all_perf:
-            # Get topic names from scripts
-            for vid_name in all_perf:
-                ep_id = "_".join(vid_name.split("_")[:2])
-                script_files = list(SCRIPTS_DIR.glob(f"{ep_id}*.json"))
-                if script_files:
-                    try:
-                        script = json.loads(script_files[0].read_text())
-                        all_perf[vid_name]["topic"] = script.get("topic", vid_name)
-                    except:
-                        all_perf[vid_name]["topic"] = vid_name
-                else:
-                    all_perf[vid_name]["topic"] = vid_name
-            
-            # Sort by total views
-            sorted_topics = sorted(all_perf.items(), key=lambda x: x[1]["total"], reverse=True)
-            
-            st.markdown("#### 🏆 Top Performing Videos")
-            
-            for i, (vid_name, data) in enumerate(sorted_topics[:10], 1):
-                medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
-                
-                col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
-                with col1:
-                    st.write(f"{medal} **{data.get('topic', vid_name)[:50]}**")
-                with col2:
-                    st.write(f"📱 {data['tiktok_views']:,}")
-                with col3:
-                    st.write(f"▶️ {data['youtube_views']:,}")
-                with col4:
-                    st.write(f"**Total: {data['total']:,}**")
-            
-            # Chart
-            if len(sorted_topics) >= 3:
-                st.markdown("---")
-                chart_data = pd.DataFrame([
-                    {"Topic": data.get("topic", name)[:30], "Views": data["total"]}
-                    for name, data in sorted_topics[:10]
-                ])
-                fig = px.bar(chart_data, x="Topic", y="Views", title="Top 10 Videos by Views")
-                fig.update_layout(xaxis_tickangle=-45, height=400)
-                st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("No performance data yet. Track some videos in TikTok/YouTube tabs first!")
-    
-    # ==================== BEST TIMES ====================
-    with analytics_tab5:
-        st.markdown("### ⏰ Posting Time Analysis")
-        
-        st.info("""
-        Track when your videos perform best to optimize posting schedule.
-        Add posting times when you track video performance.
-        """)
-        
-        # Analyze posting times from tracked videos
-        time_performance = {}
-        
-        for vid_name, stats in {**perf_data.get("tiktok", {}), **perf_data.get("youtube", {})}.items():
-            # Try to get posting time from video creation
-            ep_id = "_".join(vid_name.split("_")[:2])
-            script_files = list(SCRIPTS_DIR.glob(f"{ep_id}*.json"))
-            if script_files:
-                try:
-                    created = datetime.fromtimestamp(script_files[0].stat().st_mtime)
-                    hour = created.hour
-                    
-                    if hour not in time_performance:
-                        time_performance[hour] = {"views": 0, "count": 0}
-                    
-                    time_performance[hour]["views"] += stats.get("views", 0)
-                    time_performance[hour]["count"] += 1
-                except:
-                    pass
-        
-        if time_performance:
-            st.markdown("#### 📊 Performance by Hour")
-            
-            # Create chart data
-            chart_data = []
-            for hour in range(24):
-                data = time_performance.get(hour, {"views": 0, "count": 0})
-                avg_views = data["views"] / data["count"] if data["count"] > 0 else 0
-                chart_data.append({
-                    "Hour": f"{hour:02d}:00",
-                    "Avg Views": avg_views,
-                    "Videos": data["count"]
-                })
-            
-            df = pd.DataFrame(chart_data)
-            
-            fig = px.bar(df, x="Hour", y="Avg Views", title="Average Views by Posting Hour")
-            fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Best times
-            best_hours = sorted(time_performance.items(), key=lambda x: x[1]["views"]/max(x[1]["count"], 1), reverse=True)[:3]
-            
-            if best_hours:
-                st.markdown("#### 🏆 Best Posting Times")
-                for hour, data in best_hours:
-                    avg = data["views"] / data["count"] if data["count"] > 0 else 0
-                    st.write(f"• **{hour:02d}:00** - Avg {avg:,.0f} views ({data['count']} videos)")
-        else:
-            st.info("Track some video performance to see posting time analysis.")
-        
-        st.markdown("---")
-        st.markdown("#### 💡 General Best Practices")
-        st.markdown("""
-        Based on general social media research:
-        - **TikTok:** 7-9 AM, 12-3 PM, 7-9 PM (local time)
-        - **YouTube Shorts:** 12-3 PM, 7-9 PM
-        - **Instagram Reels:** 11 AM - 1 PM, 7-9 PM
-        
-        Track your own data to find what works best for your audience!
-        """)
-    
-    st.markdown("---")
-    
-    # Daily Summary History
-    st.markdown("### 📊 Daily Summaries")
-    
-    SUMMARY_HISTORY_FILE = LOGS_DIR / "summary_history.json"
-    
-    col1, col2 = st.columns([3, 1])
-    
-    with col2:
-        if st.button("📊 Generate Today's Summary", use_container_width=True):
-            try:
-                import subprocess
-                import sys
-                result = subprocess.run(
-                    [sys.executable, "daily_summary.py"],
-                    cwd=str(PIPELINE_DIR),
-                    capture_output=True,
-                    text=True,
-                    timeout=30
-                )
-                if result.returncode == 0:
-                    st.success("Summary generated!")
-                    st.rerun()
-                else:
-                    st.error("Failed to generate summary")
-            except Exception as e:
-                st.error(f"Error: {e}")
-    
-    # Load history
-    try:
-        if SUMMARY_HISTORY_FILE.exists():
-            history = json.loads(SUMMARY_HISTORY_FILE.read_text())
-            history = sorted(history, key=lambda x: x.get("date", ""), reverse=True)
-        else:
-            history = []
-    except:
-        history = []
-    
-    if history:
-        # Show recent summaries
-        for summary in history[:7]:  # Last 7 days
-            date = summary.get("date", "Unknown")
-            videos = summary.get("videos_generated", 0)
-            errors = summary.get("errors", 0)
-            cost = summary.get("cost", 0)
-            
-            status = "✅" if errors == 0 else "⚠️"
-            
-            with st.expander(f"{status} **{date}** - {videos} videos, ${cost:.2f}"):
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("Videos", videos)
-                with col2:
-                    st.metric("Errors", errors)
-                with col3:
-                    st.metric("Cost", f"${cost:.2f}")
-                with col4:
-                    uploads = summary.get("uploads", {})
-                    total_uploads = sum(uploads.values())
-                    st.metric("Uploads", total_uploads)
-                
-                if summary.get("videos"):
-                    st.markdown("**Topics:**")
-                    for v in summary["videos"][:5]:
-                        st.write(f"• {v.get('topic', 'Unknown')}")
-                
-                if summary.get("error_breakdown"):
-                    st.markdown("**Error Breakdown:**")
-                    for err_type, count in summary["error_breakdown"].items():
-                        st.write(f"• {err_type}: {count}")
-    else:
-        st.info("No daily summaries yet. Click 'Generate Today's Summary' to create one.")
-
-# ==================== TAB 5: COSTS ====================
-with tab6:
-    st.subheader("💰 Cost Tracking")
-    
-    num_videos = len(videos)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("### Cost Breakdown Per Video")
-        cost_data = pd.DataFrame([
-            {"Service": "OpenAI GPT-4o (Script)", "Cost": f"${COSTS['openai_gpt4o']:.3f}"},
-            {"Service": "Fish.audio (TTS)", "Cost": f"${COSTS['fish_audio']:.3f}"},
-            {"Service": "Deepgram (Timestamps)", "Cost": f"${COSTS['deepgram']:.3f}"},
-            {"Service": "FFmpeg (Rendering)", "Cost": "$0.00"},
-            {"Service": "Total", "Cost": f"${COSTS['total_per_video']:.3f}"},
-        ])
-        st.dataframe(cost_data, hide_index=True, use_container_width=True)
-    
-    with col2:
-        st.markdown("### Total Spend")
-        
-        total = num_videos * COSTS['total_per_video']
-        
-        st.metric("Videos Generated", num_videos)
-        st.metric("Cost Per Video", f"${COSTS['total_per_video']:.2f}")
-        st.metric("Total Spent", f"${total:.2f}")
-        
-        # Projection
-        st.markdown("---")
-        st.markdown("### 📊 Projections")
-        daily_videos = 2
-        monthly_cost = daily_videos * 30 * COSTS['total_per_video']
-        yearly_cost = monthly_cost * 12
-        
-        st.write(f"**At 2 videos/day:**")
-        st.write(f"- Monthly: ${monthly_cost:.2f}")
-        st.write(f"- Yearly: ${yearly_cost:.2f}")
-    
-    # Cost over time chart
-    st.markdown("### 📈 Cumulative Cost")
-    if num_videos > 0:
-        cost_timeline = []
-        running_total = 0
-        for script_path in sorted(SCRIPTS_DIR.glob("ep_*.json")):
-            try:
-                created = datetime.fromtimestamp(script_path.stat().st_mtime)
-                running_total += COSTS['total_per_video']
-                cost_timeline.append({"date": created, "total": running_total})
             except:
                 pass
-        
-        if cost_timeline:
-            df_cost = pd.DataFrame(cost_timeline)
-            fig = px.line(df_cost, x="date", y="total", markers=True,
-                         labels={"date": "Date", "total": "Total Cost ($)"})
-            fig.update_layout(height=300)
-            st.plotly_chart(fig, use_container_width=True)
+    return scripts
 
-# Config file for storing selected character duo
-CONFIG_FILE = PIPELINE_DIR / "dashboard_config.json"
 
-def load_dashboard_config():
-    try:
-        return json.loads(CONFIG_FILE.read_text())
-    except:
-        return {"selected_character_duo": "peter_stewie"}
+def get_queue():
+    """Get pending queue items"""
+    if QUEUE_FILE.exists():
+        try:
+            with open(QUEUE_FILE) as f:
+                return json.load(f)
+        except:
+            return []
+    return []
 
-def save_dashboard_config(config):
-    CONFIG_FILE.write_text(json.dumps(config, indent=2))
 
-# ==================== TAB 5B: RESOURCES ====================
-import psutil
-import shutil
-from streamlit_autorefresh import st_autorefresh
+def save_queue(queue):
+    """Save queue to file"""
+    QUEUE_FILE.parent.mkdir(exist_ok=True)
+    with open(QUEUE_FILE, "w") as f:
+        json.dump(queue, f, indent=2, default=str)
 
-with tab5b:
-    st.subheader("💾 System Resources")
-    
-    # ==================== REAL-TIME MONITORING ====================
-    st.markdown("### 🔴 Live System Monitor")
-    
-    # Auto-refresh controls
-    col1, col2, col3 = st.columns([1, 1, 2])
-    
-    with col1:
-        live_enabled = st.toggle("Live Updates", value=False, key="live_toggle")
-    
-    with col2:
-        refresh_interval = st.selectbox(
-            "Interval",
-            options=[1, 2, 5, 10],
-            index=1,
-            format_func=lambda x: f"{x}s",
-            key="refresh_interval",
-            disabled=not live_enabled
-        )
-    
-    with col3:
-        if live_enabled:
-            st.markdown(f"<span style='color: #ff4444; animation: blink 1s infinite;'>● LIVE</span> — Refreshing every {refresh_interval}s", unsafe_allow_html=True)
-            # Add blinking CSS
-            st.markdown("""
-            <style>
-            @keyframes blink {
-                0%, 50% { opacity: 1; }
-                51%, 100% { opacity: 0.3; }
-            }
-            </style>
-            """, unsafe_allow_html=True)
-        else:
-            st.caption("Enable live updates for real-time monitoring")
-    
-    # Auto-refresh when enabled
-    if live_enabled:
-        st_autorefresh(interval=refresh_interval * 1000, key="resource_refresh")
-    
-    # Real-time metrics in a highlighted box
-    st.markdown("""
-    <style>
-    .live-metrics {
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        padding: 1rem;
-        border-radius: 12px;
-        border: 1px solid rgba(255,100,100,0.3);
+
+def get_topics(niche="tech"):
+    """Get topics for a niche"""
+    topics_file = NICHES_DIR / niche / "topics.json"
+    if topics_file.exists():
+        with open(topics_file) as f:
+            data = json.load(f)
+            return data.get("topics", [])
+    return []
+
+
+def save_topics(topics, niche="tech"):
+    """Save topics to file"""
+    topics_file = NICHES_DIR / niche / "topics.json"
+    topics_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(topics_file, "w") as f:
+        json.dump({"niche": niche, "topics": topics}, f, indent=2)
+
+
+def get_system_stats():
+    """Get system resource usage"""
+    cpu = psutil.cpu_percent(interval=0.1)
+    memory = psutil.virtual_memory()
+    disk = psutil.disk_usage("/")
+    return {
+        "cpu": cpu,
+        "memory_percent": memory.percent,
+        "memory_used_gb": round(memory.used / 1024**3, 1),
+        "memory_total_gb": round(memory.total / 1024**3, 1),
+        "disk_percent": disk.percent,
+        "disk_free_gb": round(disk.free / 1024**3, 1)
     }
-    </style>
-    """, unsafe_allow_html=True)
+
+
+def get_folder_size(path):
+    """Get total size of a folder"""
+    total = 0
+    if path.exists():
+        for f in path.rglob("*"):
+            if f.is_file():
+                total += f.stat().st_size
+    return total
+
+
+def format_size(bytes_size):
+    """Format bytes to human readable"""
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if bytes_size < 1024:
+            return f"{bytes_size:.1f} {unit}"
+        bytes_size /= 1024
+    return f"{bytes_size:.1f} TB"
+
+
+def get_characters():
+    """Get available character duos"""
+    characters = []
+    if CHARACTERS_DIR.exists():
+        for d in CHARACTERS_DIR.iterdir():
+            if d.is_dir():
+                config_file = d / "config.json"
+                if config_file.exists():
+                    with open(config_file) as f:
+                        characters.append(json.load(f))
+    return characters
+
+
+def run_command(cmd):
+    """Run a shell command and return output"""
+    try:
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=PIPELINE_DIR)
+        return result.stdout + result.stderr
+    except Exception as e:
+        return str(e)
+
+
+# ==================== SIDEBAR NAVIGATION ====================
+
+with st.sidebar:
+    st.markdown("## 🎬 Video Pipeline")
+    st.markdown("---")
     
-    # Live metrics row
-    live_col1, live_col2, live_col3, live_col4 = st.columns(4)
-    
-    with live_col1:
-        cpu_percent = psutil.cpu_percent(interval=0.1)
-        cpu_color = "#2ecc71" if cpu_percent < 50 else "#f1c40f" if cpu_percent < 80 else "#e74c3c"
-        st.metric("🔥 CPU", f"{cpu_percent:.1f}%")
-        st.progress(min(cpu_percent / 100, 1.0))
-    
-    with live_col2:
-        memory = psutil.virtual_memory()
-        mem_percent = memory.percent
-        mem_used_gb = memory.used / (1024**3)
-        mem_total_gb = memory.total / (1024**3)
-        st.metric("🧠 Memory", f"{mem_percent:.1f}%")
-        st.progress(min(mem_percent / 100, 1.0))
-        st.caption(f"{mem_used_gb:.1f} / {mem_total_gb:.1f} GB")
-    
-    with live_col3:
-        try:
-            disk = shutil.disk_usage(PIPELINE_DIR)
-            disk_percent = (disk.used / disk.total) * 100
-            disk_free_gb = disk.free / (1024**3)
-        except:
-            disk_percent = 0
-            disk_free_gb = 0
-        st.metric("💿 Disk", f"{disk_percent:.1f}%")
-        st.progress(min(disk_percent / 100, 1.0))
-        st.caption(f"{disk_free_gb:.1f} GB free")
-    
-    with live_col4:
-        # Network I/O (if available)
-        try:
-            net = psutil.net_io_counters()
-            # Store previous values in session state for rate calculation
-            if 'prev_net_bytes' not in st.session_state:
-                st.session_state.prev_net_bytes = net.bytes_sent + net.bytes_recv
-                st.session_state.prev_net_time = datetime.now()
-            
-            current_bytes = net.bytes_sent + net.bytes_recv
-            time_diff = (datetime.now() - st.session_state.prev_net_time).total_seconds()
-            
-            if time_diff > 0:
-                bytes_per_sec = (current_bytes - st.session_state.prev_net_bytes) / time_diff
-                if bytes_per_sec >= 1024**2:
-                    net_speed = f"{bytes_per_sec / (1024**2):.1f} MB/s"
-                elif bytes_per_sec >= 1024:
-                    net_speed = f"{bytes_per_sec / 1024:.1f} KB/s"
-                else:
-                    net_speed = f"{bytes_per_sec:.0f} B/s"
-            else:
-                net_speed = "0 B/s"
-            
-            st.session_state.prev_net_bytes = current_bytes
-            st.session_state.prev_net_time = datetime.now()
-            
-            st.metric("🌐 Network", net_speed)
-            
-            # Count active connections
-            try:
-                connections = len(psutil.net_connections())
-                st.caption(f"{connections} connections")
-            except:
-                st.caption("")
-        except:
-            st.metric("🌐 Network", "N/A")
+    page = st.radio(
+        "Navigation",
+        ["🏠 Home", "📹 Content", "📊 Analytics", "👥 Accounts", "⚙️ Settings"],
+        label_visibility="collapsed"
+    )
     
     st.markdown("---")
     
-    # ==================== DISK USAGE ====================
-    st.markdown("### 💿 Disk Usage")
+    # Quick stats in sidebar
+    videos = get_videos()
+    st.markdown(f"**{len(videos)}** videos generated")
     
-    # Get disk usage for the pipeline directory
-    try:
-        disk = shutil.disk_usage(PIPELINE_DIR)
-        disk_total_gb = disk.total / (1024**3)
-        disk_used_gb = disk.used / (1024**3)
-        disk_free_gb = disk.free / (1024**3)
-        disk_percent = (disk.used / disk.total) * 100
-    except:
-        disk_total_gb = disk_used_gb = disk_free_gb = disk_percent = 0
+    accounts_data = load_accounts()
+    active_accounts = len([a for a in accounts_data.get("accounts", []) if a.get("active", True)])
+    st.markdown(f"**{active_accounts}** active accounts")
     
-    # Main disk metrics
+    # System health
+    stats = get_system_stats()
+    if stats["cpu"] > 80 or stats["memory_percent"] > 80:
+        st.warning(f"⚠️ High resource usage")
+    else:
+        st.success(f"✅ System healthy")
+    
+    st.markdown("---")
+    st.caption("v2.0 • Built with Streamlit")
+
+
+# ==================== PAGE: HOME ====================
+
+if page == "🏠 Home":
+    st.markdown("# Dashboard")
+    
+    # Quick Actions
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Total Disk", f"{disk_total_gb:.1f} GB")
+        if st.button("▶️ Generate Video", use_container_width=True, type="primary"):
+            st.session_state["show_generate"] = True
     with col2:
-        st.metric("Used", f"{disk_used_gb:.1f} GB")
+        if st.button("📤 Upload All", use_container_width=True):
+            st.info("Running upload for pending videos...")
+            output = run_command("python upload_all.py")
+            st.code(output[:500])
     with col3:
-        st.metric("Free", f"{disk_free_gb:.1f} GB")
+        if st.button("🔄 Refresh", use_container_width=True, key="refresh_home"):
+            st.rerun()
     with col4:
-        status = "🟢" if disk_percent < 70 else "🟡" if disk_percent < 90 else "🔴"
-        st.metric("Usage", f"{status} {disk_percent:.1f}%")
-    
-    # Progress bar for disk usage
-    st.progress(min(disk_percent / 100, 1.0))
+        if st.button("📁 Open Folder", use_container_width=True):
+            run_command(f"open {OUT_DIR}")
     
     st.markdown("---")
     
-    # Pipeline folder breakdown
-    st.markdown("### 📁 Pipeline Storage Breakdown")
+    # Metrics row
+    col1, col2, col3, col4 = st.columns(4)
     
-    def get_folder_size(path):
-        """Get total size of a folder in bytes."""
-        total = 0
-        try:
-            for entry in path.rglob('*'):
-                if entry.is_file():
-                    total += entry.stat().st_size
-        except:
-            pass
-        return total
-    
-    def format_size(bytes_size):
-        """Format bytes to human readable."""
-        if bytes_size >= 1024**3:
-            return f"{bytes_size / (1024**3):.2f} GB"
-        elif bytes_size >= 1024**2:
-            return f"{bytes_size / (1024**2):.1f} MB"
-        elif bytes_size >= 1024:
-            return f"{bytes_size / 1024:.1f} KB"
-        return f"{bytes_size} B"
-    
-    # Calculate sizes for each folder
-    folders_to_check = [
-        ("📹 Videos (out/)", OUT_DIR),
-        ("🎵 Audio (audio/)", AUDIO_DIR),
-        ("📝 Scripts (scripts/)", SCRIPTS_DIR),
-        ("🖼️ Topic Images (assets/topics/)", TOPICS_IMG_DIR),
-        ("📸 Debug Screenshots", DEBUG_DIR),
-        ("📋 Logs", LOGS_DIR),
-        ("🎮 Backgrounds", BACKGROUNDS_DIR),
-    ]
-    
-    folder_sizes = []
-    for name, path in folders_to_check:
-        if path.exists():
-            size = get_folder_size(path)
-            file_count = len(list(path.glob('*'))) if path.exists() else 0
-            folder_sizes.append({"Folder": name, "Size": size, "Files": file_count})
-        else:
-            folder_sizes.append({"Folder": name, "Size": 0, "Files": 0})
-    
-    # Sort by size
-    folder_sizes.sort(key=lambda x: x["Size"], reverse=True)
-    
-    # Display as table
-    for item in folder_sizes:
-        col1, col2, col3 = st.columns([3, 1, 1])
-        with col1:
-            st.write(item["Folder"])
-        with col2:
-            st.write(format_size(item["Size"]))
-        with col3:
-            st.write(f"{item['Files']} files")
-    
-    # Total pipeline size
-    total_pipeline_size = sum(item["Size"] for item in folder_sizes)
-    st.markdown(f"**Total Pipeline Size: {format_size(total_pipeline_size)}**")
-    
-    # Pie chart of storage
-    if total_pipeline_size > 0:
-        import plotly.graph_objects as go
-        fig = go.Figure(data=[go.Pie(
-            labels=[item["Folder"].split("(")[0].strip() for item in folder_sizes if item["Size"] > 0],
-            values=[item["Size"] for item in folder_sizes if item["Size"] > 0],
-            hole=.4
-        )])
-        fig.update_layout(height=300, margin=dict(t=20, b=20, l=20, r=20))
-        st.plotly_chart(fig, use_container_width=True)
-    
-    st.markdown("---")
-    
-    # ==================== VIDEO STATS ====================
-    st.markdown("### 📊 Video Statistics")
-    
-    video_files = list(OUT_DIR.glob("*_final.mp4"))
-    
-    if video_files:
-        # Calculate stats
-        total_size = sum(v.stat().st_size for v in video_files)
-        avg_size = total_size / len(video_files) if video_files else 0
-        
-        # Get dates
-        dates = [datetime.fromtimestamp(v.stat().st_mtime) for v in video_files]
-        oldest = min(dates) if dates else None
-        newest = max(dates) if dates else None
-        
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Total Videos", len(video_files))
-        with col2:
-            st.metric("Total Size", format_size(total_size))
-        with col3:
-            st.metric("Avg Size", format_size(avg_size))
-        with col4:
-            if oldest and newest:
-                days = (newest - oldest).days + 1
-                st.metric("Days Active", days)
-        
-        # Storage projections
-        st.markdown("#### 📈 Storage Projections")
-        
-        if oldest and newest and len(video_files) > 1:
-            days_active = (newest - oldest).days + 1
-            videos_per_day = len(video_files) / days_active if days_active > 0 else 0
-            bytes_per_day = total_size / days_active if days_active > 0 else 0
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.write(f"**Rate:** {videos_per_day:.1f} videos/day")
-            with col2:
-                st.write(f"**Storage/day:** {format_size(bytes_per_day)}")
-            with col3:
-                # Days until disk full (rough estimate)
-                if bytes_per_day > 0:
-                    days_until_full = disk_free_gb * (1024**3) / bytes_per_day
-                    st.write(f"**Est. days until full:** {days_until_full:.0f}")
-    else:
-        st.info("No videos generated yet.")
-    
-    st.markdown("---")
-    
-    # ==================== AUTO CLEANUP ====================
-    st.markdown("### 🧹 Auto Cleanup")
-    
-    # Import cleanup module
-    try:
-        from cleanup import get_storage_stats, find_old_files, cleanup, get_last_cleanup
-        cleanup_available = True
-    except ImportError:
-        cleanup_available = False
-    
-    if cleanup_available:
-        # Cleanup configuration
-        col1, col2, col3 = st.columns([1, 1, 2])
-        
-        with col1:
-            retention_days = st.number_input(
-                "Retention (days)",
-                min_value=1,
-                max_value=90,
-                value=14,
-                help="Delete files older than this many days"
-            )
-        
-        with col2:
-            keep_scripts = st.checkbox("Keep Scripts", value=False, help="Don't delete script JSON files")
-        
-        with col3:
-            last_cleanup = get_last_cleanup()
-            if last_cleanup:
-                last_date = datetime.fromisoformat(last_cleanup["timestamp"]).strftime("%Y-%m-%d %H:%M")
-                last_freed = last_cleanup.get("total_freed_mb", 0)
-                st.info(f"Last cleanup: {last_date} — Freed {last_freed:.1f} MB")
-            else:
-                st.info("No cleanup history yet")
-        
-        # Show what would be deleted
-        old_files = find_old_files(max_age_days=retention_days)
-        total_old = sum(len(files) for files in old_files.values())
-        
-        # Preview table
-        st.markdown(f"#### Files older than {retention_days} days:")
-        
-        preview_col1, preview_col2, preview_col3, preview_col4 = st.columns(4)
-        with preview_col1:
-            st.metric("📹 Videos", len(old_files["videos"]))
-        with preview_col2:
-            st.metric("🎵 Audio", len(old_files["audio"]))
-        with preview_col3:
-            st.metric("📝 Scripts", len(old_files["scripts"]) if not keep_scripts else "0 (kept)")
-        with preview_col4:
-            st.metric("🖼️ Images", len(old_files["topic_images"]))
-        
-        # Action buttons
-        action_col1, action_col2, action_col3 = st.columns([2, 2, 1])
-        
-        with action_col1:
-            if total_old > 0:
-                if st.button(f"🗑️ Delete {total_old} Old Files", use_container_width=True, type="primary"):
-                    result = cleanup(
-                        max_age_days=retention_days,
-                        execute=True,
-                        keep_scripts=keep_scripts
-                    )
-                    freed_mb = result.get("total_freed_mb", 0)
-                    st.success(f"✅ Cleanup complete! Freed {freed_mb:.1f} MB")
-                    st.rerun()
-            else:
-                st.button("✓ Nothing to clean", use_container_width=True, disabled=True)
-        
-        with action_col2:
-            if st.button("🔍 Dry Run", use_container_width=True):
-                result = cleanup(
-                    max_age_days=retention_days,
-                    execute=False,
-                    keep_scripts=keep_scripts
-                )
-                st.json(result["deleted"])
-        
-        with action_col3:
-            if st.button("🔄 Refresh", use_container_width=True, key="cleanup_refresh"):
-                st.rerun()
-    else:
-        st.error("Cleanup module not found. Run: `python cleanup.py --help`")
-    
-    st.markdown("---")
-    
-    # ==================== QUICK CLEANUP ====================
-    st.markdown("### ⚡ Quick Cleanup")
-    
-    col1, col2, col3 = st.columns(3)
+    videos = get_videos()
+    today_videos = [v for v in videos if v["created"].date() == datetime.now().date()]
+    total_size = sum(v["size_mb"] for v in videos)
     
     with col1:
-        # Count old audio folders
-        audio_folders = list(AUDIO_DIR.glob("ep_*")) if AUDIO_DIR.exists() else []
-        st.write(f"**Audio folders:** {len(audio_folders)}")
-        if st.button("🗑️ Clear Audio", use_container_width=True):
-            for folder in audio_folders:
-                try:
-                    shutil.rmtree(folder)
-                except:
-                    pass
-            st.success(f"Cleared {len(audio_folders)} audio folders")
-            st.rerun()
-    
+        st.metric("Total Videos", len(videos), f"+{len(today_videos)} today")
     with col2:
-        # Debug screenshots
-        screenshots = list(DEBUG_DIR.glob("*.png")) if DEBUG_DIR.exists() else []
-        st.write(f"**Debug screenshots:** {len(screenshots)}")
-        if st.button("🗑️ Clear Screenshots", use_container_width=True):
-            for ss in screenshots:
-                try:
-                    ss.unlink()
-                except:
-                    pass
-            st.success(f"Cleared {len(screenshots)} screenshots")
-            st.rerun()
-    
+        st.metric("Storage Used", f"{total_size/1024:.1f} GB", f"{len(videos) * COST_PER_VIDEO:.2f} cost")
     with col3:
-        # Old videos (older than 7 days)
-        if video_files:
-            old_videos = [v for v in video_files if datetime.fromtimestamp(v.stat().st_mtime) < datetime.now() - timedelta(days=7)]
-            old_size = sum(v.stat().st_size for v in old_videos)
-            st.write(f"**Videos >7 days:** {len(old_videos)} ({format_size(old_size)})")
-            if old_videos and st.button("🗑️ Clear Old Videos", use_container_width=True, type="secondary"):
-                for v in old_videos:
-                    try:
-                        v.unlink()
-                    except:
-                        pass
-                st.success(f"Cleared {len(old_videos)} old videos")
-                st.rerun()
-        else:
-            st.write("**Videos >7 days:** 0")
-
-# ==================== TAB 6: LOGS ====================
-with tab6:
-    st.subheader("🚨 Logs & Debug")
+        queue = get_queue()
+        st.metric("In Queue", len(queue))
+    with col4:
+        topics = get_topics()
+        unused = len([t for t in topics if not t.get("used", False)])
+        st.metric("Topics Left", unused, f"of {len(topics)}")
     
-    # Live log file path
-    LIVE_LOG_FILE = LOGS_DIR / "pipeline.log"
+    st.markdown("---")
     
-    # Sub-tabs for different log views
-    log_tab1, log_tab2, log_tab3 = st.tabs(["📺 Live Output", "🚨 Errors", "📸 Screenshots"])
+    # Recent videos
+    st.markdown("### Recent Videos")
     
-    # ==================== LIVE OUTPUT ====================
-    with log_tab1:
-        st.markdown("### 📺 Live Pipeline Output")
-        
-        col1, col2 = st.columns([3, 1])
-        
-        with col2:
-            auto_refresh = st.checkbox("Auto-refresh (5s)", value=False)
-            if st.button("🔄 Refresh", use_container_width=True, key="logs_refresh"):
-                st.rerun()
-            if st.button("🗑️ Clear Log", use_container_width=True):
-                if LIVE_LOG_FILE.exists():
-                    LIVE_LOG_FILE.write_text("")
-                st.success("Log cleared!")
-                st.rerun()
-        
-        # Auto-refresh using st.empty and time
-        if auto_refresh:
-            import time
-            st.info("Auto-refreshing every 5 seconds...")
-            time.sleep(5)
-            st.rerun()
-        
-        # Read and display log
-        if LIVE_LOG_FILE.exists():
-            log_content = LIVE_LOG_FILE.read_text()
-            if log_content.strip():
-                # Show last 100 lines
-                lines = log_content.strip().split('\n')
-                recent_lines = lines[-100:]
-                
-                st.code('\n'.join(recent_lines), language="text")
-                
-                st.caption(f"Showing last {len(recent_lines)} of {len(lines)} lines")
-            else:
-                st.info("Log is empty. Start a video generation to see output here.")
-        else:
-            st.info("No log file yet. Pipeline output will appear here when generation runs.")
-        
+    if videos:
+        cols = st.columns(4)
+        for i, video in enumerate(videos[:8]):
+            with cols[i % 4]:
+                with st.container():
+                    # Thumbnail or placeholder
+                    if video["thumbnail"] and Path(video["thumbnail"]).exists():
+                        st.image(video["thumbnail"], use_container_width=True)
+                    else:
+                        st.markdown(
+                            f'<div style="aspect-ratio:9/16;background:#252525;border-radius:8px;display:flex;align-items:center;justify-content:center;">🎬</div>',
+                            unsafe_allow_html=True
+                        )
+                    
+                    st.caption(video["file"][:25] + "...")
+                    st.caption(f"{video['size_mb']} MB • {video['created'].strftime('%b %d')}")
+    else:
+        st.info("No videos generated yet. Click 'Generate Video' to get started!")
+    
+    # Generate video modal
+    if st.session_state.get("show_generate", False):
         st.markdown("---")
-        st.markdown("**Tip:** Run pipeline with logging:")
-        st.code(f"python auto_generate.py --count 1 2>&1 | tee {LIVE_LOG_FILE}")
-    
-    # ==================== ERRORS ====================
-    with log_tab2:
-        st.markdown("### 🚨 Error Log")
+        st.markdown("### Generate New Video")
         
-        # Helper functions for error logging
-        def load_error_log():
-            try:
-                if ERROR_LOG_FILE.exists():
-                    return json.loads(ERROR_LOG_FILE.read_text())
-                return []
-            except:
-                return []
-        
-        def save_error_log(errors):
-            ERROR_LOG_FILE.write_text(json.dumps(errors, indent=2))
-        
-        def add_error(error_type, message, details=None):
-            errors = load_error_log()
-            errors.append({
-                "timestamp": datetime.now().isoformat(),
-                "type": error_type,
-                "message": message,
-                "details": details or {}
-            })
-            save_error_log(errors)
-    
-        # Load errors
-        errors = load_error_log()
-        
-        # Stats
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Total Errors", len(errors))
-        with col2:
-            upload_errors = len([e for e in errors if "upload" in e.get("type", "").lower()])
-            st.metric("Upload Errors", upload_errors)
-        with col3:
-            recent_errors = len([e for e in errors if datetime.fromisoformat(e.get("timestamp", "2000-01-01")) > datetime.now() - timedelta(days=1)])
-            st.metric("Last 24h", recent_errors)
-        
-        st.markdown("---")
-        
-        if errors:
-            # Filter
+        with st.form("generate_form"):
+            topic = st.text_input("Topic", placeholder="What is an API?")
+            
             col1, col2 = st.columns(2)
             with col1:
-                error_filter = st.selectbox("Filter by type", ["All"] + list(set(e.get("type", "unknown") for e in errors)))
+                characters = get_characters()
+                char_names = [c.get("duo_name", "Unknown") for c in characters]
+                selected_char = st.selectbox("Characters", char_names)
             with col2:
-                time_filter = st.selectbox("Time range", ["All Time", "Last 24h", "Last 7 days"])
+                backgrounds = ["subway_surfers", "minecraft_parkour", "gta_gameplay"]
+                selected_bg = st.selectbox("Background", backgrounds)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                submitted = st.form_submit_button("Generate", type="primary", use_container_width=True)
+            with col2:
+                if st.form_submit_button("Cancel", use_container_width=True):
+                    st.session_state["show_generate"] = False
+                    st.rerun()
+            
+            if submitted and topic:
+                st.info(f"Generating video: {topic}")
+                cmd = f'python auto_generate.py --topic "{topic}" --characters {selected_char}'
+                output = run_command(cmd)
+                st.code(output[-1000:])
+                st.session_state["show_generate"] = False
+
+
+# ==================== PAGE: CONTENT ====================
+
+elif page == "📹 Content":
+    st.markdown("# Content")
+    
+    tab1, tab2, tab3 = st.tabs(["📹 Videos", "📋 Queue", "📝 Topics"])
+    
+    # --- Videos Tab ---
+    with tab1:
+        videos = get_videos()
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown(f"**{len(videos)} videos** • {sum(v['size_mb'] for v in videos)/1024:.1f} GB total")
+        with col2:
+            if st.button("🔄", key="refresh_videos"):
+                st.rerun()
+        
+        if videos:
+            # Filter options
+            with st.expander("Filters"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    date_filter = st.selectbox("Date", ["All", "Today", "This Week", "This Month"])
+                with col2:
+                    sort_by = st.selectbox("Sort", ["Newest", "Oldest", "Largest", "Smallest"])
             
             # Apply filters
-            filtered_errors = errors
-            if error_filter != "All":
-                filtered_errors = [e for e in filtered_errors if e.get("type") == error_filter]
-            if time_filter == "Last 24h":
-                filtered_errors = [e for e in filtered_errors if datetime.fromisoformat(e.get("timestamp", "2000-01-01")) > datetime.now() - timedelta(days=1)]
-            elif time_filter == "Last 7 days":
-                filtered_errors = [e for e in filtered_errors if datetime.fromisoformat(e.get("timestamp", "2000-01-01")) > datetime.now() - timedelta(days=7)]
+            filtered_videos = videos.copy()
+            if date_filter == "Today":
+                filtered_videos = [v for v in videos if v["created"].date() == datetime.now().date()]
+            elif date_filter == "This Week":
+                week_ago = datetime.now() - timedelta(days=7)
+                filtered_videos = [v for v in videos if v["created"] > week_ago]
+            elif date_filter == "This Month":
+                month_ago = datetime.now() - timedelta(days=30)
+                filtered_videos = [v for v in videos if v["created"] > month_ago]
             
-            # Sort by newest first
-            filtered_errors = sorted(filtered_errors, key=lambda x: x.get("timestamp", ""), reverse=True)
+            if sort_by == "Oldest":
+                filtered_videos = sorted(filtered_videos, key=lambda x: x["created"])
+            elif sort_by == "Largest":
+                filtered_videos = sorted(filtered_videos, key=lambda x: x["size_mb"], reverse=True)
+            elif sort_by == "Smallest":
+                filtered_videos = sorted(filtered_videos, key=lambda x: x["size_mb"])
             
-            st.markdown(f"**Showing {len(filtered_errors)} errors**")
-            
-            for error in filtered_errors[:20]:  # Limit to 20
-                timestamp = datetime.fromisoformat(error.get("timestamp", "")).strftime("%Y-%m-%d %H:%M:%S")
-                error_type = error.get("type", "unknown")
-                message = error.get("message", "No message")
-                
-                with st.expander(f"🔴 [{error_type}] {timestamp} - {message[:50]}..."):
-                    st.write(f"**Type:** {error_type}")
-                    st.write(f"**Time:** {timestamp}")
-                    st.write(f"**Message:** {message}")
-                    if error.get("details"):
-                        st.markdown("**Details:**")
-                        st.json(error.get("details"))
-            
-            # Clear errors button
-            st.markdown("---")
-            if st.button("🗑️ Clear All Errors", type="secondary"):
-                save_error_log([])
-                st.success("Errors cleared!")
-                st.rerun()
+            # Video list
+            for video in filtered_videos[:20]:
+                with st.container():
+                    col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+                    with col1:
+                        st.markdown(f"**{video['file']}**")
+                        st.caption(f"{video['created'].strftime('%Y-%m-%d %H:%M')} • {video['size_mb']} MB")
+                    with col2:
+                        if st.button("▶️", key=f"play_{video['file']}"):
+                            st.video(video["path"])
+                    with col3:
+                        if st.button("📤", key=f"upload_{video['file']}"):
+                            st.info(f"Uploading {video['file']}...")
+                    with col4:
+                        if st.button("🗑️", key=f"delete_{video['file']}"):
+                            Path(video["path"]).unlink()
+                            st.rerun()
+                    st.markdown("---")
         else:
-            st.success("✅ No errors logged!")
-            st.info("Errors from upload scripts will appear here. You can also manually add errors for testing.")
-        
-        # Manual error entry (for testing)
-        with st.expander("➕ Add Test Error"):
-            test_type = st.text_input("Error Type", "upload_tiktok")
-            test_message = st.text_input("Message", "Test error message")
-            if st.button("Add Error"):
-                errors.append({
-                    "timestamp": datetime.now().isoformat(),
-                    "type": test_type,
-                    "message": test_message,
-                    "details": {"manual": True}
-                })
-                save_error_log(errors)
-                st.success("Error added!")
-                st.rerun()
+            st.info("No videos yet")
     
-    # ==================== SCREENSHOTS ====================
-    with log_tab3:
-        st.markdown("### 📸 Debug Screenshots")
-        if DEBUG_DIR.exists():
-            screenshots = sorted(DEBUG_DIR.glob("*.png"), key=lambda x: x.stat().st_mtime, reverse=True)
-            if screenshots:
-                # Group by date
-                today_ss = [s for s in screenshots if datetime.fromtimestamp(s.stat().st_mtime).date() == datetime.now().date()]
-                older_ss = [s for s in screenshots if datetime.fromtimestamp(s.stat().st_mtime).date() != datetime.now().date()]
-                
-                if today_ss:
-                    st.markdown("#### Today")
-                    cols = st.columns(min(4, len(today_ss)))
-                    for i, ss in enumerate(today_ss[:4]):
-                        with cols[i]:
-                            st.image(str(ss), caption=ss.name, use_container_width=True)
-                            st.caption(datetime.fromtimestamp(ss.stat().st_mtime).strftime("%H:%M:%S"))
-                
-                if older_ss:
-                    st.markdown("#### Older Screenshots")
-                    cols = st.columns(4)
-                    for i, ss in enumerate(older_ss[:12]):
-                        with cols[i % 4]:
-                            st.image(str(ss), caption=ss.name, use_container_width=True)
-                
-                # Clear screenshots button
-                st.markdown("---")
-                if st.button("🗑️ Clear All Screenshots", type="secondary"):
-                    for ss in screenshots:
-                        ss.unlink()
-                    st.success("Screenshots cleared!")
+    # --- Queue Tab ---
+    with tab2:
+        queue = get_queue()
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown(f"**{len(queue)} items** in queue")
+        with col2:
+            if st.button("Clear Queue", key="clear_queue"):
+                save_queue([])
+                st.rerun()
+        
+        if queue:
+            for i, item in enumerate(queue):
+                with st.container():
+                    col1, col2, col3 = st.columns([4, 1, 1])
+                    with col1:
+                        st.markdown(f"**{item.get('topic', 'Unknown')}**")
+                        st.caption(f"Added: {item.get('added_at', 'Unknown')}")
+                    with col2:
+                        status = item.get("status", "pending")
+                        if status == "pending":
+                            st.markdown('<span class="pill pill-warning">Pending</span>', unsafe_allow_html=True)
+                        elif status == "processing":
+                            st.markdown('<span class="pill pill-neutral">Processing</span>', unsafe_allow_html=True)
+                        else:
+                            st.markdown('<span class="pill pill-success">Done</span>', unsafe_allow_html=True)
+                    with col3:
+                        if st.button("❌", key=f"remove_queue_{i}"):
+                            queue.pop(i)
+                            save_queue(queue)
+                            st.rerun()
+                    st.markdown("---")
+        else:
+            st.info("Queue is empty")
+        
+        # Add to queue
+        with st.expander("Add to Queue"):
+            new_topic = st.text_input("Topic", key="new_queue_topic")
+            if st.button("Add", key="add_to_queue"):
+                if new_topic:
+                    queue.append({
+                        "topic": new_topic,
+                        "added_at": datetime.now().isoformat(),
+                        "status": "pending"
+                    })
+                    save_queue(queue)
+                    st.success(f"Added: {new_topic}")
                     st.rerun()
-            else:
-                st.info("No debug screenshots yet")
-        else:
-            st.info("Debug directory not found")
-
-# ==================== TAB 7: SETTINGS ====================
-with tab7:
-    st.subheader("⚙️ Settings & Tools")
     
-    settings_tab1, settings_tab2, settings_tab3, settings_tab4, settings_tab5, settings_tab6 = st.tabs(["💡 Topic Editor", "🎭 Characters", "🎮 Backgrounds", "📢 Notifications", "⏰ Schedule", "🛠️ Commands"])
-    
-    # ==================== TOPIC EDITOR ====================
-    with settings_tab1:
-        st.markdown("### 💡 Topic Editor")
+    # --- Topics Tab ---
+    with tab3:
+        niche = st.selectbox("Niche", ["tech", "finance", "gaming", "motivation"])
+        topics = get_topics(niche)
         
-        # Load topics
-        try:
-            topics_data = json.loads(TOPICS_FILE.read_text())
-            topics = topics_data.get("topics", [])
-        except:
-            topics_data = {"niche": "tech", "topics": []}
-            topics = []
+        used = len([t for t in topics if t.get("used", False)])
+        unused = len(topics) - used
         
-        # Stats
         col1, col2, col3 = st.columns(3)
-        used_count = sum(1 for t in topics if t.get("used"))
         with col1:
             st.metric("Total Topics", len(topics))
         with col2:
-            st.metric("Used", used_count)
+            st.metric("Used", used)
         with col3:
-            st.metric("Available", len(topics) - used_count)
+            st.metric("Available", unused)
         
         st.markdown("---")
         
-        # Add new topic
-        st.markdown("#### ➕ Add New Topic")
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            new_topic = st.text_input("Topic", placeholder="e.g., What is Machine Learning")
-        with col2:
-            if st.button("Add Topic", use_container_width=True):
-                if new_topic.strip():
-                    # Find max ID
-                    max_id = max([t.get("id", 0) for t in topics], default=0)
-                    topics.append({
-                        "id": max_id + 1,
-                        "topic": new_topic.strip(),
-                        "used": False
-                    })
-                    topics_data["topics"] = topics
-                    TOPICS_FILE.write_text(json.dumps(topics_data, indent=2))
-                    st.success(f"Added: {new_topic}")
-                    st.rerun()
-                else:
-                    st.error("Topic cannot be empty")
+        # Topics list
+        show_used = st.checkbox("Show used topics", value=False)
         
-        st.markdown("---")
+        filtered_topics = topics if show_used else [t for t in topics if not t.get("used", False)]
         
-        # Filter
-        col1, col2 = st.columns(2)
-        with col1:
-            topic_filter = st.selectbox("Filter", ["All", "Available", "Used"], key="topic_filter")
-        with col2:
-            topic_search = st.text_input("Search", "", key="topic_search")
-        
-        # Apply filter
-        filtered_topics = topics
-        if topic_filter == "Available":
-            filtered_topics = [t for t in topics if not t.get("used")]
-        elif topic_filter == "Used":
-            filtered_topics = [t for t in topics if t.get("used")]
-        if topic_search:
-            filtered_topics = [t for t in filtered_topics if topic_search.lower() in t.get("topic", "").lower()]
-        
-        st.markdown(f"**Showing {len(filtered_topics)} topics**")
-        
-        # Topic list
-        for i, topic in enumerate(filtered_topics):
-            col1, col2, col3, col4 = st.columns([4, 1, 1, 1])
-            
+        for i, topic in enumerate(filtered_topics[:30]):
+            col1, col2 = st.columns([5, 1])
             with col1:
-                status = "✅" if topic.get("used") else "⏳"
-                st.write(f"{status} **{topic.get('topic', 'Unknown')}**")
-            
-            with col2:
-                # Toggle used status
-                if topic.get("used"):
-                    if st.button("↩️ Unuse", key=f"unuse_{topic.get('id')}"):
-                        for t in topics:
-                            if t.get("id") == topic.get("id"):
-                                t["used"] = False
-                                t.pop("used_at", None)
-                        topics_data["topics"] = topics
-                        TOPICS_FILE.write_text(json.dumps(topics_data, indent=2))
-                        st.rerun()
+                topic_text = topic.get("topic", topic) if isinstance(topic, dict) else topic
+                if isinstance(topic, dict) and topic.get("used"):
+                    st.markdown(f"~~{topic_text}~~")
                 else:
-                    if st.button("✓ Mark Used", key=f"use_{topic.get('id')}"):
-                        for t in topics:
-                            if t.get("id") == topic.get("id"):
-                                t["used"] = True
-                                t["used_at"] = datetime.now().isoformat()
-                        topics_data["topics"] = topics
-                        TOPICS_FILE.write_text(json.dumps(topics_data, indent=2))
-                        st.rerun()
+                    st.markdown(topic_text)
+            with col2:
+                if st.button("🎬", key=f"gen_topic_{i}", help="Generate video for this topic"):
+                    st.info(f"Would generate: {topic_text}")
+        
+        # Add topic
+        st.markdown("---")
+        with st.expander("Add Topics"):
+            new_topics = st.text_area("Enter topics (one per line)")
+            if st.button("Add Topics"):
+                if new_topics:
+                    for line in new_topics.strip().split("\n"):
+                        if line.strip():
+                            topics.append({"topic": line.strip(), "used": False})
+                    save_topics(topics, niche)
+                    st.success(f"Added {len(new_topics.strip().split(chr(10)))} topics")
+                    st.rerun()
+
+
+# ==================== PAGE: ANALYTICS ====================
+
+elif page == "📊 Analytics":
+    st.markdown("# Analytics")
+    
+    tab1, tab2, tab3 = st.tabs(["📈 Overview", "🏆 Top Content", "⏰ Best Times"])
+    
+    with tab1:
+        videos = get_videos()
+        
+        # Videos over time
+        if videos:
+            df = pd.DataFrame(videos)
+            df["date"] = df["created"].dt.date
+            daily_counts = df.groupby("date").size().reset_index(name="count")
             
+            fig = px.bar(
+                daily_counts, x="date", y="count",
+                title="Videos Generated Per Day",
+                color_discrete_sequence=["#6366f1"]
+            )
+            fig.update_layout(
+                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)",
+                font_color="#a1a1aa",
+                xaxis_title="",
+                yaxis_title="Videos"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Stats
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                avg_per_day = len(videos) / max(len(daily_counts), 1)
+                st.metric("Avg Videos/Day", f"{avg_per_day:.1f}")
+            with col2:
+                total_cost = len(videos) * COST_PER_VIDEO
+                st.metric("Total Cost", f"${total_cost:.2f}")
             with col3:
-                # Edit (in expander)
-                pass  # Edit handled in expander below
-            
-            with col4:
-                # Delete
-                if st.button("🗑️", key=f"del_{topic.get('id')}"):
-                    topics = [t for t in topics if t.get("id") != topic.get("id")]
-                    topics_data["topics"] = topics
-                    TOPICS_FILE.write_text(json.dumps(topics_data, indent=2))
-                    st.success(f"Deleted topic")
-                    st.rerun()
-    
-    # ==================== CHARACTERS ====================
-    with settings_tab2:
-        st.markdown("### 🎭 Character Duos")
-        
-        # Get all character duos
-        CHARACTERS_DIR = PIPELINE_DIR / "characters"
-        character_duos = []
-        
-        for duo_dir in CHARACTERS_DIR.iterdir():
-            if duo_dir.is_dir() and not duo_dir.name.startswith('.'):
-                config_file = duo_dir / "config.json"
-                if config_file.exists():
-                    try:
-                        config = json.loads(config_file.read_text())
-                        char1_img = duo_dir / config.get("char1", {}).get("image", "char1.png")
-                        char2_img = duo_dir / config.get("char2", {}).get("image", "char2.png")
-                        character_duos.append({
-                            "name": duo_dir.name,
-                            "display_name": config.get("display_name", duo_dir.name.replace("_", " ").title()),
-                            "config": config,
-                            "dir": duo_dir,
-                            "char1_name": config.get("char1", {}).get("display_name", "Character 1"),
-                            "char2_name": config.get("char2", {}).get("display_name", "Character 2"),
-                            "char1_img": char1_img if char1_img.exists() else None,
-                            "char2_img": char2_img if char2_img.exists() else None
-                        })
-                    except:
-                        pass
-        
-        if character_duos:
-            # Load current config
-            dashboard_config = load_dashboard_config()
-            current_duo = dashboard_config.get("selected_character_duo", "peter_stewie")
-            
-            st.markdown("#### Select Default Character Duo")
-            
-            # Character duo selector
-            duo_names = [d["name"] for d in character_duos]
-            duo_display = {d["name"]: f"{d['display_name']} ({d['char1_name']} & {d['char2_name']})" for d in character_duos}
-            
-            selected = st.selectbox(
-                "Default duo for new videos",
-                duo_names,
-                index=duo_names.index(current_duo) if current_duo in duo_names else 0,
-                format_func=lambda x: duo_display.get(x, x)
-            )
-            
-            if selected != current_duo:
-                dashboard_config["selected_character_duo"] = selected
-                save_dashboard_config(dashboard_config)
-                st.success(f"Default character duo set to: {duo_display[selected]}")
-            
-            st.markdown("---")
-            st.markdown("#### Available Duos")
-            
-            # Display character duos
-            for duo in character_duos:
-                is_selected = duo["name"] == selected
-                status = "✅ Selected" if is_selected else ""
-                
-                with st.expander(f"{'⭐ ' if is_selected else ''}{duo['display_name']} {status}"):
-                    col1, col2, col3 = st.columns([1, 1, 2])
-                    
-                    with col1:
-                        st.markdown(f"**{duo['char1_name']}**")
-                        if duo["char1_img"]:
-                            st.image(str(duo["char1_img"]), width=150)
-                        else:
-                            st.info("No image")
-                    
-                    with col2:
-                        st.markdown(f"**{duo['char2_name']}**")
-                        if duo["char2_img"]:
-                            st.image(str(duo["char2_img"]), width=150)
-                        else:
-                            st.info("No image")
-                    
-                    with col3:
-                        st.markdown("**Config:**")
-                        st.json(duo["config"])
+                avg_size = sum(v["size_mb"] for v in videos) / max(len(videos), 1)
+                st.metric("Avg Size", f"{avg_size:.1f} MB")
         else:
-            st.info("No character duos found. Add them to `characters/` folder.")
+            st.info("No data yet. Generate some videos to see analytics!")
     
-    # ==================== BACKGROUNDS ====================
-    with settings_tab3:
-        st.markdown("### 🎮 Background Manager")
+    with tab2:
+        st.markdown("### Top Performing Content")
+        st.info("Connect YouTube/TikTok analytics to see real performance data")
         
-        # Ensure backgrounds directory exists
-        BACKGROUNDS_DIR.mkdir(exist_ok=True)
-        
-        backgrounds = list(BACKGROUNDS_DIR.glob("*.mp4"))
-        
-        # Stats
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Total Backgrounds", len(backgrounds))
-        with col2:
-            total_size = sum(bg.stat().st_size for bg in backgrounds) / (1024 * 1024)
-            st.metric("Total Size", f"{total_size:.1f} MB")
-        with col3:
-            # Load config for active backgrounds
-            bg_config = load_dashboard_config()
-            active_bgs = bg_config.get("active_backgrounds", [bg.name for bg in backgrounds])
-            st.metric("Active", len([b for b in active_bgs if (BACKGROUNDS_DIR / b).exists()]))
-        
-        st.markdown("---")
-        
-        # Upload new background
-        st.markdown("#### ⬆️ Upload New Background")
-        uploaded_file = st.file_uploader(
-            "Upload MP4 video",
-            type=["mp4"],
-            help="Upload gameplay footage (Subway Surfers, Minecraft, etc.)"
-        )
-        
-        if uploaded_file:
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                # Custom filename
-                custom_name = st.text_input(
-                    "Filename (optional)",
-                    value=uploaded_file.name.replace(".mp4", ""),
-                    help="Leave empty to use original filename"
-                )
-            with col2:
-                st.markdown("")
-                st.markdown("")
-                if st.button("💾 Save Background", use_container_width=True):
-                    # Save the file
-                    filename = f"{custom_name or uploaded_file.name.replace('.mp4', '')}.mp4"
-                    save_path = BACKGROUNDS_DIR / filename
-                    
-                    if save_path.exists():
-                        st.error(f"File {filename} already exists!")
-                    else:
-                        with open(save_path, "wb") as f:
-                            f.write(uploaded_file.getbuffer())
-                        st.success(f"Saved: {filename}")
-                        st.rerun()
-        
-        st.markdown("---")
-        
-        # List backgrounds with controls
-        st.markdown("#### 📁 Available Backgrounds")
-        
-        if backgrounds:
-            for bg in sorted(backgrounds, key=lambda x: x.name):
-                col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
-                
-                size_mb = bg.stat().st_size / (1024 * 1024)
-                is_active = bg.name in active_bgs
-                
-                with col1:
-                    status = "✅" if is_active else "⏸️"
-                    st.write(f"{status} **{bg.stem}** ({size_mb:.1f} MB)")
-                
-                with col2:
-                    # Toggle active status
-                    if is_active:
-                        if st.button("⏸️ Disable", key=f"disable_{bg.name}"):
-                            active_bgs = [b for b in active_bgs if b != bg.name]
-                            bg_config["active_backgrounds"] = active_bgs
-                            save_dashboard_config(bg_config)
-                            st.rerun()
-                    else:
-                        if st.button("✅ Enable", key=f"enable_{bg.name}"):
-                            active_bgs.append(bg.name)
-                            bg_config["active_backgrounds"] = active_bgs
-                            save_dashboard_config(bg_config)
-                            st.rerun()
-                
-                with col3:
-                    # Preview (just show file info for now)
-                    with st.expander("ℹ️"):
-                        st.write(f"**Path:** {bg}")
-                        st.write(f"**Size:** {size_mb:.1f} MB")
-                        modified = datetime.fromtimestamp(bg.stat().st_mtime)
-                        st.write(f"**Modified:** {modified.strftime('%Y-%m-%d %H:%M')}")
-                
-                with col4:
-                    # Delete button
-                    if st.button("🗑️", key=f"del_bg_{bg.name}"):
-                        bg.unlink()
-                        # Remove from active list
-                        active_bgs = [b for b in active_bgs if b != bg.name]
-                        bg_config["active_backgrounds"] = active_bgs
-                        save_dashboard_config(bg_config)
-                        st.success(f"Deleted: {bg.name}")
-                        st.rerun()
-        else:
-            st.info("No backgrounds found. Upload some MP4 files above!")
+        # Placeholder for when analytics is connected
+        st.markdown("#### Coming Soon")
+        st.markdown("- Views by video")
+        st.markdown("- Engagement rates")
+        st.markdown("- Best performing topics")
     
-    # ==================== NOTIFICATIONS ====================
-    with settings_tab4:
-        st.markdown("### 📢 Discord Notifications")
+    with tab3:
+        st.markdown("### Best Posting Times")
+        st.info("Connect analytics to see optimal posting times")
         
-        st.markdown("""
-        Get notified on Discord when videos are generated or uploads succeed/fail.
-        
-        **Setup:**
-        1. Go to your Discord server → Server Settings → Integrations → Webhooks
-        2. Create a new webhook and copy the URL
-        3. Paste it below
-        """)
-        
-        # Load current webhook
-        webhook_config = load_dashboard_config()
-        current_webhook = webhook_config.get("discord_webhook_url", "")
-        
-        # Webhook input
-        webhook_url = st.text_input(
-            "Discord Webhook URL",
-            value=current_webhook,
-            type="password",
-            placeholder="https://discord.com/api/webhooks/..."
-        )
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("💾 Save Webhook", use_container_width=True):
-                if webhook_url:
-                    webhook_config["discord_webhook_url"] = webhook_url
-                    save_dashboard_config(webhook_config)
-                    st.success("Webhook saved!")
-                else:
-                    # Remove webhook
-                    webhook_config.pop("discord_webhook_url", None)
-                    save_dashboard_config(webhook_config)
-                    st.info("Webhook removed")
-        
-        with col2:
-            if st.button("🧪 Test Notification", use_container_width=True):
-                if webhook_url:
-                    # Test the webhook
-                    try:
-                        import httpx
-                        test_payload = {
-                            "embeds": [{
-                                "title": "🧪 Test Notification",
-                                "description": "Discord notifications are working!",
-                                "color": 0x2ecc71,
-                                "footer": {"text": "Video Pipeline"}
-                            }]
-                        }
-                        response = httpx.post(webhook_url, json=test_payload, timeout=10)
-                        if response.status_code == 204:
-                            st.success("Test notification sent! Check Discord.")
-                        else:
-                            st.error(f"Failed: HTTP {response.status_code}")
-                    except Exception as e:
-                        st.error(f"Error: {e}")
-                else:
-                    st.warning("Enter a webhook URL first")
-        
-        st.markdown("---")
-        st.markdown("### Notification Events")
-        
-        # Notification toggles
-        notify_config = webhook_config.get("notifications", {
-            "on_video_generated": True,
-            "on_upload_success": True,
-            "on_upload_failed": True,
-            "daily_summary": False
-        })
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            notify_config["on_video_generated"] = st.checkbox(
-                "🎬 Video Generated",
-                value=notify_config.get("on_video_generated", True)
-            )
-            notify_config["on_upload_success"] = st.checkbox(
-                "✅ Upload Success",
-                value=notify_config.get("on_upload_success", True)
-            )
-        
-        with col2:
-            notify_config["on_upload_failed"] = st.checkbox(
-                "❌ Upload Failed",
-                value=notify_config.get("on_upload_failed", True)
-            )
-            notify_config["daily_summary"] = st.checkbox(
-                "📊 Daily Summary",
-                value=notify_config.get("daily_summary", False)
-            )
-        
-        # Save notification settings
-        if notify_config != webhook_config.get("notifications", {}):
-            webhook_config["notifications"] = notify_config
-            save_dashboard_config(webhook_config)
+        # Placeholder heatmap
+        st.markdown("#### Recommended Times")
+        st.markdown("- **TikTok:** 7-9 AM, 12-3 PM, 7-9 PM")
+        st.markdown("- **YouTube Shorts:** 2-4 PM, 6-9 PM")
+        st.markdown("- **Instagram:** 11 AM-1 PM, 7-9 PM")
+
+
+# ==================== PAGE: ACCOUNTS ====================
+
+elif page == "👥 Accounts":
+    st.markdown("# Accounts")
     
-    # ==================== SCHEDULE ====================
-    with settings_tab5:
-        st.markdown("### ⏰ Posting Schedule")
-        
-        st.markdown("""
-        Configure when videos are automatically generated and uploaded.
-        These settings are saved to `dashboard_config.json` and read by cron jobs.
-        """)
-        
-        # Load schedule config
-        schedule_config = load_dashboard_config()
-        schedules = schedule_config.get("schedules", [
-            {"name": "Morning Post", "time": "10:00", "enabled": True, "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]},
-            {"name": "Evening Post", "time": "18:00", "enabled": True, "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]}
-        ])
-        
-        st.markdown("---")
-        
-        # Edit existing schedules
-        st.markdown("#### 📅 Scheduled Posts")
-        
-        updated_schedules = []
-        for i, sched in enumerate(schedules):
-            with st.expander(f"{'✅' if sched.get('enabled') else '⏸️'} {sched.get('name', f'Schedule {i+1}')} - {sched.get('time', '12:00')}"):
-                col1, col2, col3 = st.columns([2, 1, 1])
-                
-                with col1:
-                    name = st.text_input("Name", value=sched.get("name", ""), key=f"sched_name_{i}")
-                
-                with col2:
-                    time = st.time_input(
-                        "Time",
-                        value=datetime.strptime(sched.get("time", "12:00"), "%H:%M").time(),
-                        key=f"sched_time_{i}"
-                    )
-                
-                with col3:
-                    enabled = st.checkbox("Enabled", value=sched.get("enabled", True), key=f"sched_enabled_{i}")
-                
-                # Days of week
-                days = st.multiselect(
-                    "Days",
-                    ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-                    default=sched.get("days", ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]),
-                    key=f"sched_days_{i}"
-                )
-                
-                # Actions
-                col1, col2 = st.columns(2)
-                with col2:
-                    if st.button("🗑️ Delete", key=f"del_sched_{i}"):
-                        # Don't add to updated list
-                        continue
-                
-                updated_schedules.append({
-                    "name": name,
-                    "time": time.strftime("%H:%M"),
-                    "enabled": enabled,
-                    "days": days
-                })
-        
-        # Add new schedule
-        st.markdown("---")
-        st.markdown("#### ➕ Add New Schedule")
-        
-        col1, col2, col3 = st.columns([2, 1, 1])
-        with col1:
-            new_name = st.text_input("Schedule Name", placeholder="Afternoon Post")
-        with col2:
-            new_time = st.time_input("Time", value=datetime.strptime("14:00", "%H:%M").time())
-        with col3:
-            st.markdown("")
-            st.markdown("")
-            if st.button("➕ Add Schedule", use_container_width=True):
-                if new_name:
-                    updated_schedules.append({
-                        "name": new_name,
-                        "time": new_time.strftime("%H:%M"),
-                        "enabled": True,
-                        "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-                    })
-        
-        # Save if changed
-        if updated_schedules != schedules:
-            schedule_config["schedules"] = updated_schedules
-            save_dashboard_config(schedule_config)
-            st.success("Schedule saved!")
-        
-        st.markdown("---")
-        st.markdown("#### 📋 Cron Job Reference")
-        st.info("""
-        **Note:** These settings configure the desired schedule. 
-        The actual cron jobs are managed by OpenClaw.
-        
-        Current cron jobs:
-        - Morning: `4eb50692-08b8-4a1d-9553-36aa7c176897`
-        - Evening: `9409fc7c-70f5-49a4-91b2-cb2899bdb258`
-        
-        To update cron times, ask KhanAI to modify the cron jobs.
-        """)
-    
-    # ==================== COMMANDS ====================
-    with settings_tab6:
-        st.markdown("### 🛠️ Quick Commands")
-        st.code("""
-# Generate for specific account
-python auto_generate.py --account tech-main --upload
-
-# Generate 1 video + upload (uses default account)
-python auto_generate.py --count 1 --upload
-
-# List all accounts
-python auto_generate.py --list-accounts
-
-# Show scheduled posts
-python scheduler.py --show
-
-# Run scheduler once (check all accounts)
-python scheduler.py --once
-
-# Manually trigger account
-python scheduler.py --run tech-main
-
-# TikTok setup
-python upload_tiktok.py --setup
-
-# Instagram setup
-python upload_instagram.py --setup
-
-# Run dashboard
-streamlit run dashboard.py
-        """)
-        
-        st.markdown("---")
-        st.markdown("### 📁 Paths")
-        st.code(f"""
-Pipeline: {PIPELINE_DIR}
-Scripts:  {SCRIPTS_DIR}
-Videos:   {OUT_DIR}
-        """)
-
-# ==================== TAB 8: ACCOUNTS ====================
-with tab8:
-    st.markdown("### 👥 Multi-Account Management")
-    st.markdown("Manage multiple accounts across platforms with different niches and schedules.")
-    
-    # Load accounts
     accounts_data = load_accounts()
-    accounts_list = accounts_data.get("accounts", [])
+    accounts = accounts_data.get("accounts", [])
     
-    # Account overview cards
-    if accounts_list:
-        cols = st.columns(min(len(accounts_list), 3))
-        for i, account in enumerate(accounts_list):
-            with cols[i % 3]:
-                status_icon = "✅" if account.get("active", True) else "⏸️"
-                platforms = ", ".join([
-                    p.title() for p, cfg in account.get("platforms", {}).items()
-                    if cfg.get("enabled", False)
-                ])
-                
-                st.markdown(f"""
-                <div class="metric-card">
-                    <h4>{status_icon} {account['name']}</h4>
-                    <p><strong>ID:</strong> {account['id']}</p>
-                    <p><strong>Niche:</strong> {account['niche'].title()}</p>
-                    <p><strong>Platforms:</strong> {platforms or 'None'}</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                col_a, col_b = st.columns(2)
-                with col_a:
-                    if st.button("✏️ Edit", key=f"edit_{account['id']}", use_container_width=True):
-                        st.session_state['editing_account'] = account['id']
-                with col_b:
-                    new_status = "Disable" if account.get("active", True) else "Enable"
-                    if st.button(f"{'⏸️' if account.get('active', True) else '▶️'} {new_status}", key=f"toggle_{account['id']}", use_container_width=True):
-                        toggle_account(account['id'])
-                        st.rerun()
-    else:
-        st.info("No accounts configured. Add your first account below!")
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.markdown(f"**{len(accounts)} accounts** configured")
+    with col2:
+        if st.button("➕ Add Account", key="add_account_btn"):
+            st.session_state["show_add_account"] = True
     
     st.markdown("---")
     
-    # Add/Edit Account Form
-    editing_id = st.session_state.get('editing_account')
-    editing_account = get_account(editing_id) if editing_id else None
-    
-    form_title = f"✏️ Edit Account: {editing_account['name']}" if editing_account else "➕ Add New Account"
-    
-    with st.expander(form_title, expanded=bool(editing_account)):
-        with st.form("account_form"):
-            col1, col2 = st.columns(2)
+    # Account cards
+    for account in accounts:
+        with st.container():
+            col1, col2, col3 = st.columns([3, 2, 1])
             
             with col1:
-                account_name = st.text_input(
-                    "Account Name", 
-                    value=editing_account['name'] if editing_account else "",
-                    placeholder="e.g., Tech Explainer"
-                )
+                status = "🟢" if account.get("active", True) else "🔴"
+                st.markdown(f"### {status} {account.get('name', 'Unnamed')}")
+                st.caption(f"ID: {account.get('id')} • Niche: {account.get('niche')}")
+            
+            with col2:
+                platforms = account.get("platforms", {})
+                platform_status = []
+                for p, config in platforms.items():
+                    if config.get("enabled"):
+                        platform_status.append(f"✅ {p.title()}")
+                    else:
+                        platform_status.append(f"❌ {p.title()}")
+                st.markdown(" • ".join(platform_status))
+            
+            with col3:
+                if st.button("Toggle", key=f"toggle_{account['id']}"):
+                    toggle_account(account["id"])
+                    st.rerun()
+                if st.button("Delete", key=f"delete_{account['id']}"):
+                    delete_account(account["id"])
+                    st.rerun()
+            
+            # Expanded details
+            with st.expander("Details"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown("**Schedule**")
+                    schedule = account.get("schedule", {})
+                    st.write(f"Timezone: {schedule.get('timezone', 'Not set')}")
+                    for slot in schedule.get("slots", []):
+                        st.write(f"• {slot.get('time')} → {', '.join(slot.get('platforms', []))}")
+                with col2:
+                    st.markdown("**Content**")
+                    content = account.get("content", {})
+                    st.write(f"Characters: {', '.join(content.get('characters', []))}")
+                    st.write(f"Backgrounds: {', '.join(content.get('backgrounds', []))}")
+            
+            st.markdown("---")
+    
+    # Add account form
+    if st.session_state.get("show_add_account", False):
+        st.markdown("### Add New Account")
+        
+        with st.form("add_account_form"):
+            name = st.text_input("Account Name")
+            niche = st.selectbox("Niche", ["tech", "finance", "gaming", "motivation"])
+            
+            st.markdown("**Platforms**")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                enable_tiktok = st.checkbox("TikTok", value=True)
+            with col2:
+                enable_youtube = st.checkbox("YouTube", value=True)
+            with col3:
+                enable_instagram = st.checkbox("Instagram", value=True)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.form_submit_button("Create", type="primary"):
+                    if name:
+                        new_account = create_account(
+                            name=name,
+                            niche=niche,
+                            platforms={
+                                "tiktok": {"enabled": enable_tiktok, "credentials": f"credentials/tiktok_{name.lower()}.json"},
+                                "youtube": {"enabled": enable_youtube, "credentials": f"credentials/youtube_{name.lower()}.json"},
+                                "instagram": {"enabled": enable_instagram, "credentials": f"credentials/instagram_{name.lower()}.json"},
+                            },
+                            characters=["peter", "stewie"],
+                            backgrounds=["subway_surfers"],
+                            schedule={
+                                "timezone": "America/Toronto",
+                                "slots": [{"time": "10:00", "platforms": ["tiktok", "youtube", "instagram"]}],
+                                "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+                            }
+                        )
+                        st.success(f"Created account: {new_account['id']}")
+                        st.session_state["show_add_account"] = False
+                        st.rerun()
+            with col2:
+                if st.form_submit_button("Cancel"):
+                    st.session_state["show_add_account"] = False
+                    st.rerun()
+
+
+# ==================== PAGE: SETTINGS ====================
+
+elif page == "⚙️ Settings":
+    st.markdown("# Settings")
+    
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎭 Characters", "🎮 Backgrounds", "⏰ Schedule", "💾 Storage", "🔧 Advanced"])
+    
+    # --- Characters ---
+    with tab1:
+        st.markdown("### Character Duos")
+        
+        characters = get_characters()
+        
+        for char in characters:
+            with st.expander(f"🎭 {char.get('duo_name', 'Unknown')}"):
+                col1, col2 = st.columns(2)
                 
-                niche = st.selectbox(
-                    "Niche",
-                    options=["tech", "finance", "gaming", "science", "history", "sports", "cooking", "fitness", "other"],
-                    index=["tech", "finance", "gaming", "science", "history", "sports", "cooking", "fitness", "other"].index(
-                        editing_account['niche'] if editing_account else "tech"
-                    )
-                )
+                with col1:
+                    st.markdown("**Character 1**")
+                    c1 = char.get("char1", {})
+                    st.write(f"Name: {c1.get('display_name', 'Unknown')}")
+                    st.write(f"Voice ID: {c1.get('voice_id', 'N/A')[:20]}...")
+                
+                with col2:
+                    st.markdown("**Character 2**")
+                    c2 = char.get("char2", {})
+                    st.write(f"Name: {c2.get('display_name', 'Unknown')}")
+                    st.write(f"Voice ID: {c2.get('voice_id', 'N/A')[:20]}...")
+        
+        if not characters:
+            st.info("No characters configured. Add character folders to /characters/")
+    
+    # --- Backgrounds ---
+    with tab2:
+        st.markdown("### Background Videos")
+        
+        if BACKGROUNDS_DIR.exists():
+            backgrounds = [d.name for d in BACKGROUNDS_DIR.iterdir() if d.is_dir()]
+            for bg in backgrounds:
+                bg_path = BACKGROUNDS_DIR / bg
+                videos = list(bg_path.glob("*.mp4"))
+                st.markdown(f"**{bg}** — {len(videos)} videos")
+        else:
+            st.info("No backgrounds configured")
+    
+    # --- Schedule ---
+    with tab3:
+        st.markdown("### Upload Schedule")
+        
+        accounts_data = load_accounts()
+        
+        for account in accounts_data.get("accounts", []):
+            with st.expander(f"⏰ {account.get('name', 'Unknown')}"):
+                schedule = account.get("schedule", {})
                 
                 timezone = st.selectbox(
                     "Timezone",
-                    options=["America/Toronto", "America/New_York", "America/Los_Angeles", "Europe/London", "Asia/Tokyo", "UTC"],
-                    index=0
+                    ["America/Toronto", "America/New_York", "America/Los_Angeles", "UTC"],
+                    index=0,
+                    key=f"tz_{account['id']}"
                 )
-            
-            with col2:
-                # Platform toggles
-                st.markdown("**Platforms**")
                 
-                existing_platforms = editing_account.get("platforms", {}) if editing_account else {}
-                
-                tiktok_enabled = st.checkbox(
-                    "TikTok", 
-                    value=existing_platforms.get("tiktok", {}).get("enabled", True)
-                )
-                youtube_enabled = st.checkbox(
-                    "YouTube", 
-                    value=existing_platforms.get("youtube", {}).get("enabled", True)
-                )
-                instagram_enabled = st.checkbox(
-                    "Instagram", 
-                    value=existing_platforms.get("instagram", {}).get("enabled", True)
-                )
-            
-            # Characters
-            st.markdown("**Characters** (select which voices to use)")
-            all_characters = ["peter", "stewie", "morgan", "trump", "rogan", "spongebob", "babar", "virat"]
-            existing_chars = editing_account.get("content", {}).get("characters", all_characters[:4]) if editing_account else all_characters[:4]
-            
-            char_cols = st.columns(4)
-            selected_chars = []
-            for i, char in enumerate(all_characters):
-                with char_cols[i % 4]:
-                    if st.checkbox(char.title(), value=char in existing_chars, key=f"char_{char}"):
-                        selected_chars.append(char)
-            
-            # Backgrounds
-            st.markdown("**Backgrounds**")
-            all_backgrounds = ["subway_surfers", "minecraft-parkour", "gta-gameplay"]
-            existing_bgs = editing_account.get("content", {}).get("backgrounds", all_backgrounds) if editing_account else all_backgrounds
-            
-            bg_cols = st.columns(3)
-            selected_bgs = []
-            for i, bg in enumerate(all_backgrounds):
-                with bg_cols[i]:
-                    if st.checkbox(bg.replace("-", " ").replace("_", " ").title(), value=bg in existing_bgs, key=f"bg_{bg}"):
-                        selected_bgs.append(bg)
-            
-            # Schedule
-            st.markdown("**Schedule**")
-            schedule_cols = st.columns(2)
-            with schedule_cols[0]:
-                time_1 = st.time_input("Post Time 1", value=datetime.strptime("10:00", "%H:%M").time())
-            with schedule_cols[1]:
-                time_2 = st.time_input("Post Time 2", value=datetime.strptime("18:00", "%H:%M").time())
-            
-            # Days
-            days_cols = st.columns(7)
-            day_names = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
-            existing_days = editing_account.get("schedule", {}).get("days", day_names) if editing_account else day_names
-            selected_days = []
-            for i, day in enumerate(day_names):
-                with days_cols[i]:
-                    if st.checkbox(day.title(), value=day in existing_days, key=f"day_{day}"):
-                        selected_days.append(day)
-            
-            # Submit buttons
-            col_submit, col_cancel, col_delete = st.columns([2, 1, 1])
-            
-            with col_submit:
-                submitted = st.form_submit_button(
-                    "💾 Save Account" if editing_account else "➕ Create Account",
-                    use_container_width=True
-                )
-            
-            with col_cancel:
-                if editing_account:
-                    if st.form_submit_button("❌ Cancel", use_container_width=True):
-                        st.session_state['editing_account'] = None
-                        st.rerun()
-            
-            with col_delete:
-                if editing_account:
-                    if st.form_submit_button("🗑️ Delete", use_container_width=True):
-                        delete_account(editing_account['id'])
-                        st.session_state['editing_account'] = None
-                        st.success(f"Deleted account: {editing_account['name']}")
-                        st.rerun()
-            
-            if submitted:
-                if not account_name:
-                    st.error("Account name is required!")
-                elif not selected_chars:
-                    st.error("Select at least one character!")
-                elif not selected_bgs:
-                    st.error("Select at least one background!")
-                else:
-                    platforms_config = {
-                        "tiktok": {
-                            "enabled": tiktok_enabled,
-                            "credentials": f"credentials/tiktok_{niche}.json",
-                            "username": None
-                        },
-                        "youtube": {
-                            "enabled": youtube_enabled,
-                            "credentials": f"credentials/youtube_{niche}.json",
-                            "channel_id": None
-                        },
-                        "instagram": {
-                            "enabled": instagram_enabled,
-                            "credentials": f"credentials/instagram_{niche}.json",
-                            "username": None
-                        }
-                    }
-                    
-                    schedule_config = {
-                        "timezone": timezone,
-                        "slots": [
-                            {"time": time_1.strftime("%H:%M"), "platforms": ["tiktok", "youtube", "instagram"]},
-                            {"time": time_2.strftime("%H:%M"), "platforms": ["tiktok", "youtube", "instagram"]}
-                        ],
-                        "days": selected_days
-                    }
-                    
-                    if editing_account:
-                        # Update existing
-                        update_account(editing_account['id'], {
-                            "name": account_name,
-                            "niche": niche,
-                            "platforms": platforms_config,
-                            "content": {
-                                "topics_file": editing_account.get("content", {}).get("topics_file", f"niches/{niche}/topics.json"),
-                                "characters": selected_chars,
-                                "backgrounds": selected_bgs
-                            },
-                            "schedule": schedule_config
-                        })
-                        st.success(f"Updated account: {account_name}")
-                        st.session_state['editing_account'] = None
-                    else:
-                        # Create new
-                        new_account = create_account(
-                            name=account_name,
-                            niche=niche,
-                            platforms=platforms_config,
-                            characters=selected_chars,
-                            backgrounds=selected_bgs,
-                            schedule=schedule_config
+                st.markdown("**Time Slots**")
+                for i, slot in enumerate(schedule.get("slots", [])):
+                    col1, col2 = st.columns([1, 2])
+                    with col1:
+                        st.text_input("Time", value=slot.get("time", ""), key=f"slot_time_{account['id']}_{i}")
+                    with col2:
+                        st.multiselect(
+                            "Platforms",
+                            ["tiktok", "youtube", "instagram"],
+                            default=slot.get("platforms", []),
+                            key=f"slot_plat_{account['id']}_{i}"
                         )
-                        st.success(f"Created account: {account_name} (ID: {new_account['id']})")
-                    
-                    st.rerun()
     
-    # Credentials section
-    st.markdown("---")
-    st.markdown("### 🔐 Credentials")
-    st.markdown("Upload or manage platform credentials for each account.")
-    
-    # Show existing credentials
-    CREDENTIALS_DIR.mkdir(exist_ok=True)
-    cred_files = list(CREDENTIALS_DIR.glob("*.json"))
-    
-    if cred_files:
-        cred_df = pd.DataFrame([
-            {
-                "File": f.name,
-                "Platform": f.stem.split("_")[0] if "_" in f.stem else "unknown",
-                "Account": f.stem.split("_")[1] if "_" in f.stem else f.stem,
-                "Size": f"{f.stat().st_size / 1024:.1f} KB",
-                "Modified": datetime.fromtimestamp(f.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
-            }
-            for f in cred_files if f.name != ".gitkeep"
-        ])
-        if not cred_df.empty:
-            st.dataframe(cred_df, use_container_width=True)
-    else:
-        st.info("No credential files found. Run platform setup commands to create them.")
-    
-    # Migration helper
-    with st.expander("🔄 Migrate Existing Credentials"):
-        st.markdown("""
-        If you have existing credential files in the pipeline root, click below to copy them to the credentials folder.
-        """)
-        if st.button("Run Migration"):
-            migrate_existing_credentials()
-            st.success("Migration complete! Check the credentials folder.")
-            st.rerun()
-    
-    # Settings
-    st.markdown("---")
-    st.markdown("### ⚙️ Account Settings")
-    
-    settings = accounts_data.get("settings", {})
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        default_account = st.selectbox(
-            "Default Account",
-            options=[a['id'] for a in accounts_list] if accounts_list else [""],
-            index=0 if not accounts_list else (
-                [a['id'] for a in accounts_list].index(settings.get("default_account", "")) 
-                if settings.get("default_account") in [a['id'] for a in accounts_list] else 0
-            )
-        )
-    
-    with col2:
-        parallel_uploads = st.checkbox(
-            "Parallel Uploads",
-            value=settings.get("parallel_uploads", False),
-            help="Upload to multiple platforms simultaneously"
-        )
-    
-    if st.button("💾 Save Settings"):
-        accounts_data["settings"]["default_account"] = default_account
-        accounts_data["settings"]["parallel_uploads"] = parallel_uploads
-        save_accounts(accounts_data)
-        st.success("Settings saved!")
-
-# ==================== TAB 9: EDITOR ====================
-with tab9:
-    st.markdown("### ✂️ AI Video Editor")
-    st.markdown("Edit videos using natural language prompts powered by AI + FFmpeg.")
-    
-    # Import video editor
-    try:
-        from video_editor import edit_video, get_video_info, get_edit_history, PRESETS, EDITED_DIR
-        editor_available = True
-    except ImportError:
-        editor_available = False
-        st.error("Video editor module not found!")
-    
-    if editor_available:
-        # Video selector
-        col1, col2 = st.columns([2, 1])
+    # --- Storage ---
+    with tab4:
+        st.markdown("### Storage Management")
         
+        stats = get_system_stats()
+        
+        col1, col2, col3 = st.columns(3)
         with col1:
-            # Get all videos
-            all_videos = sorted(OUT_DIR.glob("*_final.mp4"), key=lambda x: x.stat().st_mtime, reverse=True)
-            edited_videos = sorted(EDITED_DIR.glob("*.mp4"), key=lambda x: x.stat().st_mtime, reverse=True) if EDITED_DIR.exists() else []
-            
-            video_options = ["Select a video..."]
-            video_options += [f"📹 {v.name}" for v in all_videos[:20]]
-            if edited_videos:
-                video_options += ["---"]
-                video_options += [f"✂️ {v.name}" for v in edited_videos[:10]]
-            
-            selected = st.selectbox("Select Video", video_options)
-        
+            st.metric("Disk Free", f"{stats['disk_free_gb']} GB")
         with col2:
-            if selected and selected != "Select a video..." and selected != "---":
-                # Parse selection
-                video_name = selected.split(" ", 1)[1] if " " in selected else selected
-                if selected.startswith("✂️"):
-                    video_path = EDITED_DIR / video_name
-                else:
-                    video_path = OUT_DIR / video_name
-                
-                if video_path.exists():
-                    info = get_video_info(video_path)
-                    st.metric("Duration", f"{info.get('duration', 0):.1f}s")
-                    st.caption(f"{info.get('width')}x{info.get('height')} • {info.get('size_mb', 0):.1f}MB")
+            st.metric("Disk Used", f"{stats['disk_percent']}%")
+        with col3:
+            st.metric("Memory", f"{stats['memory_percent']}%")
         
         st.markdown("---")
         
-        # Edit interface
-        if selected and selected != "Select a video..." and selected != "---":
-            video_name = selected.split(" ", 1)[1] if " " in selected else selected
-            if selected.startswith("✂️"):
-                video_path = EDITED_DIR / video_name
-            else:
-                video_path = OUT_DIR / video_name
-            
-            # Two columns: presets and custom
-            col1, col2 = st.columns(2)
-            
+        st.markdown("**Folder Sizes**")
+        folders = [
+            ("Videos", OUT_DIR),
+            ("Audio", AUDIO_DIR),
+            ("Scripts", SCRIPTS_DIR),
+        ]
+        
+        for name, path in folders:
+            size = get_folder_size(path)
+            col1, col2, col3 = st.columns([2, 1, 1])
             with col1:
-                st.markdown("#### 🎯 Quick Presets")
-                preset_cols = st.columns(2)
-                
-                preset_list = list(PRESETS.items())
-                for i, (key, desc) in enumerate(preset_list):
-                    with preset_cols[i % 2]:
-                        if st.button(desc[:30] + "..." if len(desc) > 30 else desc, key=f"preset_{key}", use_container_width=True):
-                            st.session_state['edit_prompt'] = desc
-            
+                st.markdown(name)
             with col2:
-                st.markdown("#### ✏️ Custom Edit")
-                prompt = st.text_area(
-                    "Describe your edit",
-                    value=st.session_state.get('edit_prompt', ''),
-                    placeholder="e.g., 'Add text FOLLOW at bottom for last 3 seconds'",
-                    height=100
-                )
-                
-                # Clear prompt from session state after using
-                if 'edit_prompt' in st.session_state:
-                    del st.session_state['edit_prompt']
-            
-            # Action buttons
-            st.markdown("---")
-            btn_col1, btn_col2, btn_col3 = st.columns([2, 2, 1])
-            
-            with btn_col1:
-                dry_run = st.button("🔍 Preview Command", use_container_width=True, disabled=not prompt)
-            
-            with btn_col2:
-                execute = st.button("✂️ Apply Edit", use_container_width=True, type="primary", disabled=not prompt)
-            
-            with btn_col3:
-                st.caption("Output saved to edited/")
-            
-            # Execute
-            if dry_run and prompt:
-                with st.spinner("Generating FFmpeg command..."):
-                    result = edit_video(str(video_path), prompt, dry_run=True)
-                
-                if result.get("success"):
-                    st.success(f"**Command preview:**")
-                    st.code(" ".join(result.get("command", [])), language="bash")
-                    st.info(f"📝 {result.get('description', '')}")
-                else:
-                    st.error(f"Error: {result.get('error')}")
-            
-            if execute and prompt:
-                with st.spinner("Applying edit... This may take a moment."):
-                    result = edit_video(str(video_path), prompt)
-                
-                if result.get("success"):
-                    st.success(f"✅ Edit complete!")
-                    st.write(f"**Output:** `{result.get('output_path')}`")
-                    st.write(f"**Size:** {result.get('size_mb', 0):.1f} MB")
-                    
-                    # Show video preview
-                    output_path = Path(result.get('output_path'))
-                    if output_path.exists():
-                        st.video(str(output_path))
-                else:
-                    st.error(f"❌ Edit failed: {result.get('error')}")
-                    if result.get('command'):
-                        st.code(" ".join(result.get('command', [])), language="bash")
-            
-            # Video preview
-            st.markdown("---")
-            st.markdown("#### 📺 Current Video Preview")
-            if video_path.exists():
-                st.video(str(video_path))
+                st.markdown(format_size(size))
+            with col3:
+                if st.button("Clear", key=f"clear_{name}"):
+                    if path.exists():
+                        for f in path.glob("*"):
+                            if f.is_file():
+                                f.unlink()
+                        st.success(f"Cleared {name}")
+                        st.rerun()
         
-        else:
-            st.info("👆 Select a video to start editing")
-        
-        # Edit history
         st.markdown("---")
-        st.markdown("### 📜 Edit History")
         
-        history = get_edit_history()
-        if history:
-            history_df = pd.DataFrame(history[-10:][::-1])  # Last 10, newest first
-            if 'timestamp' in history_df.columns:
-                history_df['timestamp'] = pd.to_datetime(history_df['timestamp']).dt.strftime('%m/%d %H:%M')
-            st.dataframe(history_df[['timestamp', 'input', 'prompt', 'output']], use_container_width=True)
+        # Auto cleanup settings
+        st.markdown("### Auto Cleanup")
+        retention_days = st.slider("Keep videos for (days)", 7, 90, 14)
+        if st.button("Run Cleanup Now"):
+            cutoff = datetime.now() - timedelta(days=retention_days)
+            deleted = 0
+            if OUT_DIR.exists():
+                for f in OUT_DIR.glob("*.mp4"):
+                    if datetime.fromtimestamp(f.stat().st_mtime) < cutoff:
+                        f.unlink()
+                        deleted += 1
+            st.success(f"Deleted {deleted} old videos")
+    
+    # --- Advanced ---
+    with tab5:
+        st.markdown("### Advanced Settings")
+        
+        st.markdown("**API Keys**")
+        st.info("API keys are stored in config.json and .env files")
+        
+        config_file = PIPELINE_DIR / "config.json"
+        if config_file.exists():
+            st.success("✅ config.json found")
         else:
-            st.caption("No edits yet. Make your first edit above!")
+            st.warning("⚠️ config.json not found")
+        
+        env_file = PIPELINE_DIR / ".env"
+        if env_file.exists():
+            st.success("✅ .env found")
+        else:
+            st.warning("⚠️ .env not found")
+        
+        st.markdown("---")
+        
+        st.markdown("**Commands**")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔄 Restart Scheduler", use_container_width=True):
+                output = run_command("pkill -f scheduler.py; nohup python scheduler.py &")
+                st.code(output or "Scheduler restarted")
+        with col2:
+            if st.button("🧪 Test Pipeline", use_container_width=True):
+                output = run_command("python pipeline.py --help")
+                st.code(output[:500])
+        
+        st.markdown("---")
+        
+        st.markdown("**Logs**")
+        
+        log_files = list(LOGS_DIR.glob("*.log")) if LOGS_DIR.exists() else []
+        if log_files:
+            selected_log = st.selectbox("Select log file", [f.name for f in log_files])
+            if selected_log:
+                log_path = LOGS_DIR / selected_log
+                if log_path.exists():
+                    with open(log_path) as f:
+                        content = f.read()[-5000:]  # Last 5000 chars
+                    st.code(content)
+        else:
+            st.info("No log files found")
+        
+        # Debug screenshots
+        if DEBUG_DIR.exists():
+            screenshots = list(DEBUG_DIR.glob("*.png"))
+            if screenshots:
+                st.markdown("**Debug Screenshots**")
+                selected_ss = st.selectbox("Select screenshot", [f.name for f in sorted(screenshots, reverse=True)[:10]])
+                if selected_ss:
+                    st.image(str(DEBUG_DIR / selected_ss))
+
 
 # ==================== FOOTER ====================
-st.markdown("---")
-col1, col2, col3 = st.columns(3)
-with col2:
-    if st.button("🔄 Refresh Dashboard", use_container_width=True):
-        st.rerun()
 
-st.caption("Video Pipeline Dashboard • Built with Streamlit • Cost: ~$0.03/video")
+st.markdown("---")
+st.caption("Video Pipeline Dashboard v2.0 • Built with ❤️")

@@ -1,0 +1,83 @@
+{
+  "episode": "ep_027_20260307_100525",
+  "title": "Stacks vs Queues: The Epic Showdown!",
+  "topic": "What is a stack vs queue",
+  "duo": "rogan_stewie",
+  "background": "gta-gameplay",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's the difference between a stack and a queue?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Ah, Peter, think of a stack as a pancake tower!",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "stewie",
+      "line": "You can only take the top pancake, no cheating!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "A queue is like a line at the DMV. First in, first out!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "Technically, a stack uses LIFO: Last In, First Out.",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "A queue uses FIFO: First In, First Out. Simple, yes?",
+      "pause_after_ms": 450
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "So, a stack's like my fridge. Stuff in the back gets real old!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Exactly, and a queue's orderly like... well, not you!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "I see! Use stacks in apps like undo buttons!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "Yes, and queues for task scheduling, unless it\u2019s your workout schedule!",
+      "pause_after_ms": 450
+    },
+    {
+      "id": 11,
+      "character": "peter",
+      "line": "Great! Can I stack my burgers that way?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 12,
+      "character": "stewie",
+      "line": "Only if you want them to disappear faster!",
+      "pause_after_ms": 300
+    }
+  ],
+  "generated_at": "2026-03-07T10:05:25.668438",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_027_20260307_100525.png"
+}

@@ -117,72 +117,86 @@
     {
       "id": 20,
       "topic": "What is OAuth",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-05T15:00:42.088939"
     },
     {
       "id": 21,
       "topic": "What is JWT",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-05T15:05:58.612465"
     },
     {
       "id": 22,
       "topic": "What is hashing vs encryption",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-05T23:00:47.037135"
     },
     {
       "id": 23,
       "topic": "What is a hash table",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-05T23:06:00.629789"
     },
     {
       "id": 24,
       "topic": "What is Big O notation",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-06T15:00:55.185633"
     },
     {
       "id": 25,
       "topic": "What is a linked list",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-06T23:00:49.683743"
     },
     {
       "id": 26,
       "topic": "What is a binary tree",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-07T15:00:43.455869"
     },
     {
       "id": 27,
       "topic": "What is a stack vs queue",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-07T15:06:10.140214"
     },
     {
       "id": 28,
       "topic": "What is sorting algorithms",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-07T23:00:42.028290"
     },
     {
       "id": 29,
       "topic": "What is binary search",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-07T23:11:01.237747"
     },
     {
       "id": 30,
       "topic": "What is dynamic programming",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-08T14:00:54.058126"
     },
     {
       "id": 31,
       "topic": "What is OOP",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-08T22:01:00.990384"
     },
     {
       "id": 32,
       "topic": "What is inheritance",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-09T14:00:44.391925"
     },
     {
       "id": 33,
       "topic": "What is polymorphism",
-      "used": false
+      "used": true,
+      "used_at": "2026-03-09T22:00:39.999453"
     },
     {
       "id": 34,

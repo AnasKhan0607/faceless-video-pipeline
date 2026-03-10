@@ -1,0 +1,71 @@
+{
+  "episode": "ep_020_20260305_100013",
+  "title": "Stewie Explains OAuth to Confused Peter",
+  "topic": "What is OAuth",
+  "duo": "morgan_rogan",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's this OAuth thing I keep hearing about?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Think of OAuth like a valet key for your apps, Peter.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "A valet key? I still can't parallel park, you know.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "OAuth lets apps access your info without handling your password.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "You authorize an app to interact with another on your behalf.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "It's like saying, 'Yes, you can borrow my dog, but no driving!'",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "So like logging in to a game with my email?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Exactly, it keeps your credentials private and secure, my simple friend.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "And here I thought it was an Irish folk dance!",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "Oh, Peter, stick to dancing with your food.",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-05T10:00:13.915272",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_020_20260305_100013.png"
+}

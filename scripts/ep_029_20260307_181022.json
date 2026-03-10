@@ -1,0 +1,77 @@
+{
+  "episode": "ep_029_20260307_181022",
+  "title": "Binary Search: The Secret to Finding Quickly",
+  "topic": "What is binary search",
+  "duo": "spongebob_trump",
+  "background": "minecraft-parkour",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's this binary search I keep hearing about?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Imagine looking for a villain in an alphabetized phone book.",
+      "pause_after_ms": 450
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "I just flip to the middle and start there!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "Exactly! Binary search divides and conquers.",
+      "pause_after_ms": 350
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "It checks the middle, then decides up or down.",
+      "pause_after_ms": 350
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "This efficiently narrows your search, halving options each time.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "Oh, like when I dig through Lois's cookie stash!",
+      "pause_after_ms": 450
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Precisely! Why waste time opening every tin?",
+      "pause_after_ms": 350
+    },
+    {
+      "id": 9,
+      "character": "stewie",
+      "line": "Binary search speeds up finding items in sorted data.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "peter",
+      "line": "So, more cookies, less time... I like it!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 11,
+      "character": "stewie",
+      "line": "Now if only Lois hid those cookies alphabetically...",
+      "pause_after_ms": 450
+    }
+  ],
+  "generated_at": "2026-03-07T18:10:22.540118",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_029_20260307_181022.png"
+}

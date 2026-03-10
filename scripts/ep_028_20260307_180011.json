@@ -1,0 +1,77 @@
+{
+  "episode": "ep_028_20260307_180011",
+  "title": "Sorting Secrets with Stewie",
+  "topic": "What is sorting algorithms",
+  "duo": "rogan_morgan",
+  "background": "gta-gameplay",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's a sorting algorithm?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Ah, Peter, think of it as organizing your sock drawer!",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "stewie",
+      "line": "You don't just throw them in! You pair them by color, right?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "peter",
+      "line": "Right! But how does that relate to computers?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "A sorting algorithm is a method to arrange data in a specific order.",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "Like bubble sort, it repeatedly steps through the list, swapping elements.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "stewie",
+      "line": "It does this until the entire list is sorted.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 8,
+      "character": "peter",
+      "line": "So computers love neat sock drawers?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "stewie",
+      "line": "Indeed! Sorting makes it easier to find and process data.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "peter",
+      "line": "Sounds like magic... or laundry day!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 11,
+      "character": "stewie",
+      "line": "Both require a bit of sorting, and sometimes a lost sock!",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-07T18:00:11.309266",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_028_20260307_180011.png"
+}

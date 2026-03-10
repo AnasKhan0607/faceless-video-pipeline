@@ -1,0 +1,77 @@
+{
+  "episode": "ep_026_20260307_100012",
+  "title": "Binary Tree Basics with Peter and Stewie",
+  "topic": "What is a binary tree",
+  "duo": "morgan_spongebob",
+  "background": "gta-gameplay",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's a binary tree? Is it like binary code?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "No, Peter! Think of it like a family tree, but for data.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "So, it has branches and all that?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "Exactly! Each point is a 'node' with up to two 'child' nodes.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "The top node's the 'root', and we split data as we go down.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "peter",
+      "line": "Why's that useful? Got a story for it?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "stewie",
+      "line": "Sure! It helps organize and search data efficiently, like a library index.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "peter",
+      "line": "Ah! So it's the Dewey Decimal of computers!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "stewie",
+      "line": "Precisely, if Dewey liked nesting dolls!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "peter",
+      "line": "Got it! No more binary babble from me!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 11,
+      "character": "stewie",
+      "line": "Thank goodness! Now, if only you understood fractions...",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-07T10:00:12.485630",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_026_20260307_100012.png"
+}

@@ -1,0 +1,77 @@
+{
+  "episode": "ep_025_20260306_180019",
+  "title": "Linked Lists with Peter & Stewie",
+  "topic": "What is a linked list",
+  "duo": "stewie_spongebob",
+  "background": "minecraft-parkour",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Hey Stewie, what on earth is a linked list?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Think of it like a treasure hunt, but with data!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "So, each clue leads to the next one?",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "Precisely! Each node points to the next node.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "It's a chain of data elements, Peter.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 6,
+      "character": "peter",
+      "line": "But why bother with chains?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "stewie",
+      "line": "Because they make inserting data easy\u2014no shuffling needed!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "peter",
+      "line": "Like adding a new sandwich to a picnic lineup?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "stewie",
+      "line": "Exactly, no upset ants! Just insert and go.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 10,
+      "character": "peter",
+      "line": "I get it now. Linked lists are data's conga line!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 11,
+      "character": "stewie",
+      "line": "Yes, minus the offbeat dancing. Well done, Peter!",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-06T18:00:19.345293",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_025_20260306_180019.png"
+}

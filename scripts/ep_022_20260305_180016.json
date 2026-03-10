@@ -1,0 +1,77 @@
+{
+  "episode": "ep_022_20260305_180016",
+  "title": "Hashing vs Encryption Explained by Peter & Stewie",
+  "topic": "What is hashing vs encryption",
+  "duo": "stewie_peter",
+  "background": "minecraft-parkour",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's the deal with hashing and encryption?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Think of encryption as a locked diary!",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "stewie",
+      "line": "While hashing is like a fingerprint of your diary.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 4,
+      "character": "peter",
+      "line": "So encryption hides my secrets, and hashing...?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "Creates unique codes for data, but can\u2019t convert back to original.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "Encryption transforms data to keep it secret, reversible with a key.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "Got it! So passwords get hashed?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Precisely! Hashing verifies passwords without storing them literally.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "And encryption keeps nosy folks out of my diary.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "Exactly, unless your password is \u2018password\u2019.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 11,
+      "character": "peter",
+      "line": "Guilty as charged, Stewie. Time to change!",
+      "pause_after_ms": 400
+    }
+  ],
+  "generated_at": "2026-03-05T18:00:16.812451",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_022_20260305_180016.png"
+}

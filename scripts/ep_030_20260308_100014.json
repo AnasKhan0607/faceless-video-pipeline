@@ -1,0 +1,71 @@
+{
+  "episode": "ep_030_20260308_100014",
+  "title": "Dynamic Programming Explained by Peter and Stewie!",
+  "topic": "What is dynamic programming",
+  "duo": "morgan_rogan",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's this 'dynamic programming' everyone talks about?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Peter, think of it like meal prepping for your brain.",
+      "pause_after_ms": 350
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "What? Are we feeding my brain chicken and rice?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "No, it's storing solutions to solve bigger problems faster.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "Dynamic programming breaks complex problems into simpler subproblems.",
+      "pause_after_ms": 350
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "It calculates solutions once, avoiding redundant calculations.",
+      "pause_after_ms": 350
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "So, like saving time on leftovers? Makes sense!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Exactly, it's used in algorithms like the Fibonacci sequence.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "More time for TV! I love this dynamic programming.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "You'll be the Einstein of couch potatoes, Peter!",
+      "pause_after_ms": 350
+    }
+  ],
+  "generated_at": "2026-03-08T10:00:14.804816",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_030_20260308_100014.png"
+}

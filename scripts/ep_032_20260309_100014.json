@@ -1,0 +1,71 @@
+{
+  "episode": "ep_032_20260309_100014",
+  "title": "Stewie Explains: Inheritance 101",
+  "topic": "What is inheritance",
+  "duo": "rogan_trump",
+  "background": "minecraft-parkour",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Stewie, what's this 'inheritance' thing in programming?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Think of it like getting your dad's old car.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 3,
+      "character": "stewie",
+      "line": "But for code. Inheritance lets classes share properties.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "A class can inherit methods and attributes from another class.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "peter",
+      "line": "So, like a family heirloom, but less dusty?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "Precisely, it reduces code repetition and fosters reuse.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 7,
+      "character": "stewie",
+      "line": "Imagine a 'Vehicle' class. 'Car' and 'Bike' can inherit basic traits.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "peter",
+      "line": "Got it, so their kids won't need new wheels!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "stewie",
+      "line": "Exactly, Peter, and this makes code maintenance easier.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "peter",
+      "line": "Wish someone told me earlier. I could inherit some smarts!",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-09T10:00:15.025686",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_032_20260309_100014.png"
+}

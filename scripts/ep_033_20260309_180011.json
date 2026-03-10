@@ -1,0 +1,71 @@
+{
+  "episode": "ep_033_20260309_180011",
+  "title": "Polymorphism: More Than Meets the Eye!",
+  "topic": "What is polymorphism",
+  "duo": "trump_morgan",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Hey Stewie, what's this polymorphism thing I keep hearing about?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Ah, Peter, think of polymorphism like a Swiss Army knife!",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 3,
+      "character": "peter",
+      "line": "Oh, so it can do more than one thing?",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "Precisely! In programming, it lets methods do different things.",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 5,
+      "character": "peter",
+      "line": "Like a chameleon changing colors?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "stewie",
+      "line": "No, Peter. It's when different objects respond to the same method call.",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 7,
+      "character": "peter",
+      "line": "Oh, so it's about objects behaving differently?",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "Exactly! Like a car that can beep, accelerate, or stop.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "Cool! So it's versatile, like me at a buffet.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "Yes, Peter, minus the indigestion!",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-09T18:00:11.065688",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_033_20260309_180011.png"
+}

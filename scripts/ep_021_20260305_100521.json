@@ -1,0 +1,77 @@
+{
+  "episode": "ep_021_20260305_100521",
+  "title": "Peter Learns JWT with Stewie!",
+  "topic": "What is JWT",
+  "duo": "peter_stewie",
+  "background": "subway_surfers",
+  "dialogue": [
+    {
+      "id": 1,
+      "character": "peter",
+      "line": "Hey Stewie, what's this JWT thingy?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 2,
+      "character": "stewie",
+      "line": "Think of it as an ID badge, Peter.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 3,
+      "character": "stewie",
+      "line": "JWT stands for JSON Web Token.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 4,
+      "character": "stewie",
+      "line": "It's a compact, URL-safe way to represent claims.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 5,
+      "character": "stewie",
+      "line": "It consists of a header, payload, and signature.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 6,
+      "character": "peter",
+      "line": "Header, payload, signature...like a super sandwich!",
+      "pause_after_ms": 500
+    },
+    {
+      "id": 7,
+      "character": "stewie",
+      "line": "Exactly, but you can't eat this one.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 8,
+      "character": "stewie",
+      "line": "JWTs are used to verify the sender's identity.",
+      "pause_after_ms": 300
+    },
+    {
+      "id": 9,
+      "character": "peter",
+      "line": "So, it's like showing ID at a bar?",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 10,
+      "character": "stewie",
+      "line": "Precisely. But with less beer, Peter.",
+      "pause_after_ms": 400
+    },
+    {
+      "id": 11,
+      "character": "peter",
+      "line": "Darn, I was hoping for a free drink.",
+      "pause_after_ms": 500
+    }
+  ],
+  "generated_at": "2026-03-05T10:05:21.883646",
+  "topic_image": "/Users/anaskhan/.openclaw/workspace/tiktok/pipeline/assets/topics/ep_021_20260305_100521.png"
+}
