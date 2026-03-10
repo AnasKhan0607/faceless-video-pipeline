@@ -445,7 +445,7 @@ with st.sidebar:
     
     page = st.radio(
         "Navigation",
-        ["🏠 Home", "📹 Content", "📊 Analytics", "👥 Accounts", "⚙️ Settings"],
+        ["🏠 Home", "📹 Content", "✂️ Editor", "📊 Analytics", "👥 Accounts", "⚙️ Settings", "📋 Logs"],
         label_visibility="collapsed"
     )
     
@@ -575,7 +575,7 @@ if page == "🏠 Home":
 elif page == "📹 Content":
     st.markdown("# Content")
     
-    tab1, tab2, tab3 = st.tabs(["📹 Videos", "📋 Queue", "📝 Topics"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📹 Videos", "📋 Queue", "📝 Topics", "📄 Scripts"])
     
     # --- Videos Tab ---
     with tab1:
@@ -733,6 +733,186 @@ elif page == "📹 Content":
                     save_topics(topics, niche)
                     st.success(f"Added {len(new_topics.strip().split(chr(10)))} topics")
                     st.rerun()
+    
+    # --- Scripts Tab ---
+    with tab4:
+        st.markdown("### Generated Scripts")
+        
+        scripts = get_scripts()
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown(f"**{len(scripts)} scripts** generated")
+        with col2:
+            if st.button("🔄", key="refresh_scripts"):
+                st.rerun()
+        
+        if scripts:
+            for script in scripts[:20]:
+                with st.expander(f"📄 {script['topic'][:50]}... ({script['created'].strftime('%b %d')})"):
+                    st.caption(f"File: {script['file']}")
+                    st.caption(f"Characters: {', '.join(script.get('characters', []))}")
+                    
+                    # Load and show script content
+                    try:
+                        with open(script['path']) as f:
+                            content = json.load(f)
+                        
+                        st.markdown("**Dialogue:**")
+                        for line in content.get("script", [])[:5]:
+                            char = line.get("character", "?")
+                            text = line.get("line", "")[:100]
+                            st.markdown(f"**{char}:** {text}...")
+                        
+                        if len(content.get("script", [])) > 5:
+                            st.caption(f"... and {len(content['script']) - 5} more lines")
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button("📋 Copy JSON", key=f"copy_{script['file']}"):
+                                st.code(json.dumps(content, indent=2)[:2000])
+                        with col2:
+                            if st.button("🗑️ Delete", key=f"del_script_{script['file']}"):
+                                Path(script['path']).unlink()
+                                st.rerun()
+                    except Exception as e:
+                        st.error(f"Could not load script: {e}")
+        else:
+            st.info("No scripts generated yet")
+
+
+# ==================== PAGE: EDITOR ====================
+
+elif page == "✂️ Editor":
+    st.markdown("# Video Editor")
+    st.markdown("Edit videos using natural language prompts powered by AI + FFmpeg.")
+    
+    # Import video editor
+    try:
+        from video_editor import edit_video, get_video_info, get_edit_history, PRESETS, EDITED_DIR
+        editor_available = True
+    except ImportError:
+        editor_available = False
+        st.warning("Video editor module not found. Make sure video_editor.py exists.")
+    
+    if editor_available:
+        # Video selector
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            all_videos = sorted(OUT_DIR.glob("*_final.mp4"), key=lambda x: x.stat().st_mtime, reverse=True)
+            edited_videos = sorted(EDITED_DIR.glob("*.mp4"), key=lambda x: x.stat().st_mtime, reverse=True) if EDITED_DIR.exists() else []
+            
+            video_options = ["Select a video..."]
+            video_options += [f"📹 {v.name}" for v in all_videos[:20]]
+            if edited_videos:
+                video_options += ["---"]
+                video_options += [f"✂️ {v.name}" for v in edited_videos[:10]]
+            
+            selected = st.selectbox("Select Video", video_options)
+        
+        with col2:
+            if selected and selected != "Select a video..." and selected != "---":
+                video_name = selected.split(" ", 1)[1] if " " in selected else selected
+                if selected.startswith("✂️"):
+                    video_path = EDITED_DIR / video_name
+                else:
+                    video_path = OUT_DIR / video_name
+                
+                if video_path.exists():
+                    info = get_video_info(video_path)
+                    st.metric("Duration", f"{info.get('duration', 0):.1f}s")
+                    st.caption(f"{info.get('width')}x{info.get('height')} • {info.get('size_mb', 0):.1f}MB")
+        
+        st.markdown("---")
+        
+        if selected and selected != "Select a video..." and selected != "---":
+            video_name = selected.split(" ", 1)[1] if " " in selected else selected
+            if selected.startswith("✂️"):
+                video_path = EDITED_DIR / video_name
+            else:
+                video_path = OUT_DIR / video_name
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("#### Quick Presets")
+                preset_cols = st.columns(2)
+                
+                preset_list = list(PRESETS.items())
+                for i, (key, desc) in enumerate(preset_list[:8]):
+                    with preset_cols[i % 2]:
+                        if st.button(desc[:25] + "..." if len(desc) > 25 else desc, key=f"preset_{key}", use_container_width=True):
+                            st.session_state['edit_prompt'] = desc
+            
+            with col2:
+                st.markdown("#### Custom Edit")
+                prompt = st.text_area(
+                    "Describe your edit",
+                    value=st.session_state.get('edit_prompt', ''),
+                    placeholder="e.g., 'Add text FOLLOW at bottom for last 3 seconds'",
+                    height=100
+                )
+                
+                if 'edit_prompt' in st.session_state:
+                    del st.session_state['edit_prompt']
+            
+            st.markdown("---")
+            btn_col1, btn_col2 = st.columns(2)
+            
+            with btn_col1:
+                dry_run = st.button("🔍 Preview Command", use_container_width=True, disabled=not prompt)
+            
+            with btn_col2:
+                execute = st.button("✂️ Apply Edit", use_container_width=True, type="primary", disabled=not prompt)
+            
+            if dry_run and prompt:
+                with st.spinner("Generating FFmpeg command..."):
+                    result = edit_video(str(video_path), prompt, dry_run=True)
+                
+                if result.get("success"):
+                    st.success("**Command preview:**")
+                    st.code(" ".join(result.get("command", [])), language="bash")
+                    st.info(f"📝 {result.get('description', '')}")
+                else:
+                    st.error(f"Error: {result.get('error')}")
+            
+            if execute and prompt:
+                with st.spinner("Applying edit... This may take a moment."):
+                    result = edit_video(str(video_path), prompt)
+                
+                if result.get("success"):
+                    st.success("✅ Edit complete!")
+                    st.write(f"**Output:** `{result.get('output_path')}`")
+                    st.write(f"**Size:** {result.get('size_mb', 0):.1f} MB")
+                    
+                    output_path = Path(result.get('output_path'))
+                    if output_path.exists():
+                        st.video(str(output_path))
+                else:
+                    st.error(f"❌ Edit failed: {result.get('error')}")
+            
+            st.markdown("---")
+            st.markdown("#### Video Preview")
+            if video_path.exists():
+                st.video(str(video_path))
+        else:
+            st.info("👆 Select a video to start editing")
+        
+        # Edit history
+        st.markdown("---")
+        st.markdown("### Edit History")
+        
+        history = get_edit_history()
+        if history:
+            history_df = pd.DataFrame(history[-10:][::-1])
+            if 'timestamp' in history_df.columns:
+                history_df['timestamp'] = pd.to_datetime(history_df['timestamp']).dt.strftime('%m/%d %H:%M')
+            st.dataframe(history_df[['timestamp', 'input', 'prompt', 'output']], use_container_width=True)
+        else:
+            st.caption("No edits yet.")
+    else:
+        st.info("The video editor requires the `video_editor.py` module. Check that it exists in the pipeline directory.")
 
 
 # ==================== PAGE: ANALYTICS ====================
@@ -1094,6 +1274,184 @@ elif page == "⚙️ Settings":
                 selected_ss = st.selectbox("Select screenshot", [f.name for f in sorted(screenshots, reverse=True)[:10]])
                 if selected_ss:
                     st.image(str(DEBUG_DIR / selected_ss))
+
+
+# ==================== PAGE: LOGS ====================
+
+elif page == "📋 Logs":
+    st.markdown("# Logs & Monitoring")
+    
+    LIVE_LOG_FILE = LOGS_DIR / "pipeline.log"
+    ERROR_LOG_FILE = LOGS_DIR / "errors.json"
+    
+    tab1, tab2, tab3, tab4 = st.tabs(["📺 Live Output", "🚨 Errors", "📸 Screenshots", "🔴 System Monitor"])
+    
+    # --- Live Output ---
+    with tab1:
+        st.markdown("### Live Pipeline Output")
+        
+        col1, col2 = st.columns([3, 1])
+        with col2:
+            if st.button("🔄 Refresh", key="refresh_logs"):
+                st.rerun()
+            if st.button("🗑️ Clear Log"):
+                if LIVE_LOG_FILE.exists():
+                    LIVE_LOG_FILE.write_text("")
+                st.success("Log cleared!")
+                st.rerun()
+        
+        if LIVE_LOG_FILE.exists():
+            log_content = LIVE_LOG_FILE.read_text()
+            if log_content.strip():
+                lines = log_content.strip().split('\n')
+                recent_lines = lines[-100:]
+                st.code('\n'.join(recent_lines), language="text")
+                st.caption(f"Showing last {len(recent_lines)} of {len(lines)} lines")
+            else:
+                st.info("Log is empty.")
+        else:
+            st.info("No log file yet. Run the pipeline to see output.")
+        
+        st.markdown("---")
+        st.markdown("**Tip:** Run with logging:")
+        st.code(f"python auto_generate.py 2>&1 | tee {LIVE_LOG_FILE}")
+    
+    # --- Errors ---
+    with tab2:
+        st.markdown("### Error Log")
+        
+        def load_error_log():
+            try:
+                if ERROR_LOG_FILE.exists():
+                    return json.loads(ERROR_LOG_FILE.read_text())
+                return []
+            except:
+                return []
+        
+        def save_error_log(errors):
+            ERROR_LOG_FILE.write_text(json.dumps(errors, indent=2, default=str))
+        
+        errors = load_error_log()
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Errors", len(errors))
+        with col2:
+            upload_errors = len([e for e in errors if "upload" in e.get("type", "").lower()])
+            st.metric("Upload Errors", upload_errors)
+        with col3:
+            recent_errors = len([e for e in errors if datetime.fromisoformat(e.get("timestamp", "2000-01-01")) > datetime.now() - timedelta(days=1)])
+            st.metric("Last 24h", recent_errors)
+        
+        st.markdown("---")
+        
+        if errors:
+            error_filter = st.selectbox("Filter by type", ["All"] + list(set(e.get("type", "unknown") for e in errors)))
+            
+            filtered_errors = errors if error_filter == "All" else [e for e in errors if e.get("type") == error_filter]
+            filtered_errors = sorted(filtered_errors, key=lambda x: x.get("timestamp", ""), reverse=True)
+            
+            for error in filtered_errors[:15]:
+                timestamp = datetime.fromisoformat(error.get("timestamp", "")).strftime("%Y-%m-%d %H:%M")
+                error_type = error.get("type", "unknown")
+                message = error.get("message", "No message")
+                
+                with st.expander(f"🔴 [{error_type}] {timestamp}"):
+                    st.write(f"**Message:** {message}")
+                    if error.get("details"):
+                        st.json(error.get("details"))
+            
+            if st.button("🗑️ Clear All Errors"):
+                save_error_log([])
+                st.rerun()
+        else:
+            st.success("✅ No errors logged!")
+    
+    # --- Screenshots ---
+    with tab3:
+        st.markdown("### Debug Screenshots")
+        
+        if DEBUG_DIR.exists():
+            screenshots = sorted(DEBUG_DIR.glob("*.png"), key=lambda x: x.stat().st_mtime, reverse=True)
+            
+            if screenshots:
+                col1, col2 = st.columns([3, 1])
+                with col2:
+                    if st.button("🗑️ Clear Screenshots"):
+                        for f in screenshots:
+                            f.unlink()
+                        st.rerun()
+                
+                selected = st.selectbox("Select screenshot", [f.name for f in screenshots[:20]])
+                if selected:
+                    st.image(str(DEBUG_DIR / selected))
+                    st.caption(f"Taken: {datetime.fromtimestamp((DEBUG_DIR / selected).stat().st_mtime).strftime('%Y-%m-%d %H:%M')}")
+            else:
+                st.info("No screenshots yet")
+        else:
+            st.info("Debug directory not found")
+    
+    # --- System Monitor ---
+    with tab4:
+        st.markdown("### Real-Time System Monitor")
+        
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            if st.button("🔄 Refresh Stats", key="refresh_system"):
+                st.rerun()
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            cpu_percent = psutil.cpu_percent(interval=0.1)
+            st.metric("🔥 CPU", f"{cpu_percent:.1f}%")
+            st.progress(min(cpu_percent / 100, 1.0))
+        
+        with col2:
+            memory = psutil.virtual_memory()
+            st.metric("🧠 Memory", f"{memory.percent:.1f}%")
+            st.progress(min(memory.percent / 100, 1.0))
+            st.caption(f"{memory.used / 1024**3:.1f} / {memory.total / 1024**3:.1f} GB")
+        
+        with col3:
+            disk = shutil.disk_usage(PIPELINE_DIR)
+            disk_percent = (disk.used / disk.total) * 100
+            st.metric("💿 Disk", f"{disk_percent:.1f}%")
+            st.progress(min(disk_percent / 100, 1.0))
+            st.caption(f"{disk.free / 1024**3:.1f} GB free")
+        
+        with col4:
+            try:
+                net = psutil.net_io_counters()
+                total_mb = (net.bytes_sent + net.bytes_recv) / 1024**2
+                st.metric("🌐 Network", f"{total_mb:.0f} MB")
+                st.caption("Total transferred")
+            except:
+                st.metric("🌐 Network", "N/A")
+        
+        st.markdown("---")
+        
+        # Running processes related to pipeline
+        st.markdown("### Running Processes")
+        
+        pipeline_processes = []
+        for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'cpu_percent', 'memory_percent']):
+            try:
+                cmdline = ' '.join(proc.info['cmdline'] or [])
+                if any(x in cmdline.lower() for x in ['pipeline', 'scheduler', 'upload', 'streamlit']):
+                    pipeline_processes.append({
+                        "PID": proc.info['pid'],
+                        "Name": proc.info['name'],
+                        "CPU%": f"{proc.info['cpu_percent']:.1f}",
+                        "Mem%": f"{proc.info['memory_percent']:.1f}",
+                    })
+            except:
+                pass
+        
+        if pipeline_processes:
+            st.dataframe(pd.DataFrame(pipeline_processes), use_container_width=True)
+        else:
+            st.info("No pipeline processes running")
 
 
 # ==================== FOOTER ====================
