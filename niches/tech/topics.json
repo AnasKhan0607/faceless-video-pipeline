@@ -1,537 +1,105 @@
 {
   "niche": "tech",
   "topics": [
-    {
-      "id": 1,
-      "topic": "What is an API",
-      "used": true
-    },
-    {
-      "id": 2,
-      "topic": "What is recursion",
-      "used": true,
-      "used_at": "2026-03-01T01:44:39.904446"
-    },
-    {
-      "id": 3,
-      "topic": "What is a database",
-      "used": true,
-      "used_at": "2026-03-01T01:58:05.163921"
-    },
-    {
-      "id": 4,
-      "topic": "What is REST vs GraphQL",
-      "used": true,
-      "used_at": "2026-03-01T02:08:30.905487"
-    },
-    {
-      "id": 5,
-      "topic": "What is Docker",
-      "used": true,
-      "used_at": "2026-03-01T02:11:59.253890"
-    },
-    {
-      "id": 6,
-      "topic": "What is Kubernetes",
-      "used": true,
-      "used_at": "2026-03-01T02:23:33.851771"
-    },
-    {
-      "id": 7,
-      "topic": "What is Git",
-      "used": true,
-      "used_at": "2026-03-01T02:36:13.281198"
-    },
-    {
-      "id": 8,
-      "topic": "What is a pull request",
-      "used": true,
-      "used_at": "2026-03-01T03:15:19.075849"
-    },
-    {
-      "id": 9,
-      "topic": "What is CI/CD",
-      "used": true,
-      "used_at": "2026-03-01T03:30:34.976676"
-    },
-    {
-      "id": 10,
-      "topic": "What is the cloud",
-      "used": true,
-      "used_at": "2026-03-01T10:00:48.632542"
-    },
-    {
-      "id": 11,
-      "topic": "What is AWS vs Azure vs GCP",
-      "used": true,
-      "used_at": "2026-03-01T10:01:53.178670"
-    },
-    {
-      "id": 12,
-      "topic": "What is a microservice",
-      "used": true,
-      "used_at": "2026-03-01T17:31:59.913905"
-    },
-    {
-      "id": 13,
-      "topic": "What is a monolith",
-      "used": true,
-      "used_at": "2026-03-01T18:00:45.143205"
-    },
-    {
-      "id": 14,
-      "topic": "What is SQL vs NoSQL",
-      "used": true,
-      "used_at": "2026-03-02T05:03:28.466467"
-    },
-    {
-      "id": 15,
-      "topic": "What is caching",
-      "used": true,
-      "used_at": "2026-03-02T10:02:13.272653"
-    },
-    {
-      "id": 16,
-      "topic": "What is Redis",
-      "used": true,
-      "used_at": "2026-03-03T15:00:42.836031"
-    },
-    {
-      "id": 17,
-      "topic": "What is a load balancer",
-      "used": true,
-      "used_at": "2026-03-03T23:00:43.418966"
-    },
-    {
-      "id": 18,
-      "topic": "What is DNS",
-      "used": true,
-      "used_at": "2026-03-04T15:00:58.123326"
-    },
-    {
-      "id": 19,
-      "topic": "What is HTTPS",
-      "used": true,
-      "used_at": "2026-03-04T23:00:49.752063"
-    },
-    {
-      "id": 20,
-      "topic": "What is OAuth",
-      "used": true,
-      "used_at": "2026-03-05T15:00:42.088939"
-    },
-    {
-      "id": 21,
-      "topic": "What is JWT",
-      "used": true,
-      "used_at": "2026-03-05T15:05:58.612465"
-    },
-    {
-      "id": 22,
-      "topic": "What is hashing vs encryption",
-      "used": true,
-      "used_at": "2026-03-05T23:00:47.037135"
-    },
-    {
-      "id": 23,
-      "topic": "What is a hash table",
-      "used": true,
-      "used_at": "2026-03-05T23:06:00.629789"
-    },
-    {
-      "id": 24,
-      "topic": "What is Big O notation",
-      "used": true,
-      "used_at": "2026-03-06T15:00:55.185633"
-    },
-    {
-      "id": 25,
-      "topic": "What is a linked list",
-      "used": true,
-      "used_at": "2026-03-06T23:00:49.683743"
-    },
-    {
-      "id": 26,
-      "topic": "What is a binary tree",
-      "used": true,
-      "used_at": "2026-03-07T15:00:43.455869"
-    },
-    {
-      "id": 27,
-      "topic": "What is a stack vs queue",
-      "used": true,
-      "used_at": "2026-03-07T15:06:10.140214"
-    },
-    {
-      "id": 28,
-      "topic": "What is sorting algorithms",
-      "used": true,
-      "used_at": "2026-03-07T23:00:42.028290"
-    },
-    {
-      "id": 29,
-      "topic": "What is binary search",
-      "used": true,
-      "used_at": "2026-03-07T23:11:01.237747"
-    },
-    {
-      "id": 30,
-      "topic": "What is dynamic programming",
-      "used": true,
-      "used_at": "2026-03-08T14:00:54.058126"
-    },
-    {
-      "id": 31,
-      "topic": "What is OOP",
-      "used": true,
-      "used_at": "2026-03-08T22:01:00.990384"
-    },
-    {
-      "id": 32,
-      "topic": "What is inheritance",
-      "used": true,
-      "used_at": "2026-03-09T14:00:44.391925"
-    },
-    {
-      "id": 33,
-      "topic": "What is polymorphism",
-      "used": true,
-      "used_at": "2026-03-09T22:00:39.999453"
-    },
-    {
-      "id": 34,
-      "topic": "What is encapsulation",
-      "used": false
-    },
-    {
-      "id": 35,
-      "topic": "What is abstraction",
-      "used": false
-    },
-    {
-      "id": 36,
-      "topic": "What is functional programming",
-      "used": false
-    },
-    {
-      "id": 37,
-      "topic": "What is async await",
-      "used": false
-    },
-    {
-      "id": 38,
-      "topic": "What is a promise",
-      "used": false
-    },
-    {
-      "id": 39,
-      "topic": "What is callback hell",
-      "used": false
-    },
-    {
-      "id": 40,
-      "topic": "What is an event loop",
-      "used": false
-    },
-    {
-      "id": 41,
-      "topic": "What is TypeScript",
-      "used": false
-    },
-    {
-      "id": 42,
-      "topic": "What is React",
-      "used": false
-    },
-    {
-      "id": 43,
-      "topic": "What is Vue vs React vs Angular",
-      "used": false
-    },
-    {
-      "id": 44,
-      "topic": "What is Next.js",
-      "used": false
-    },
-    {
-      "id": 45,
-      "topic": "What is server side rendering",
-      "used": false
-    },
-    {
-      "id": 46,
-      "topic": "What is a CDN",
-      "used": false
-    },
-    {
-      "id": 47,
-      "topic": "What is webpack",
-      "used": false
-    },
-    {
-      "id": 48,
-      "topic": "What is npm vs yarn",
-      "used": false
-    },
-    {
-      "id": 49,
-      "topic": "What is a package manager",
-      "used": false
-    },
-    {
-      "id": 50,
-      "topic": "What is Python vs JavaScript",
-      "used": false
-    },
-    {
-      "id": 51,
-      "topic": "What is machine learning",
-      "used": false
-    },
-    {
-      "id": 52,
-      "topic": "What is neural network",
-      "used": false
-    },
-    {
-      "id": 53,
-      "topic": "What is ChatGPT",
-      "used": false
-    },
-    {
-      "id": 54,
-      "topic": "What is an LLM",
-      "used": false
-    },
-    {
-      "id": 55,
-      "topic": "What is RAG",
-      "used": false
-    },
-    {
-      "id": 56,
-      "topic": "What is vector database",
-      "used": false
-    },
-    {
-      "id": 57,
-      "topic": "What is embeddings",
-      "used": false
-    },
-    {
-      "id": 58,
-      "topic": "What is fine tuning",
-      "used": false
-    },
-    {
-      "id": 59,
-      "topic": "What is prompt engineering",
-      "used": false
-    },
-    {
-      "id": 60,
-      "topic": "What is AI agents",
-      "used": false
-    },
-    {
-      "id": 61,
-      "topic": "What is blockchain",
-      "used": false
-    },
-    {
-      "id": 62,
-      "topic": "What is Web3",
-      "used": false
-    },
-    {
-      "id": 63,
-      "topic": "What is a smart contract",
-      "used": false
-    },
-    {
-      "id": 64,
-      "topic": "What is Linux",
-      "used": false
-    },
-    {
-      "id": 65,
-      "topic": "What is bash",
-      "used": false
-    },
-    {
-      "id": 66,
-      "topic": "What is SSH",
-      "used": false
-    },
-    {
-      "id": 67,
-      "topic": "What is a terminal",
-      "used": false
-    },
-    {
-      "id": 68,
-      "topic": "What is vim vs vscode",
-      "used": false
-    },
-    {
-      "id": 69,
-      "topic": "What is debugging",
-      "used": false
-    },
-    {
-      "id": 70,
-      "topic": "What is unit testing",
-      "used": false
-    },
-    {
-      "id": 71,
-      "topic": "What is TDD",
-      "used": false
-    },
-    {
-      "id": 72,
-      "topic": "What is agile",
-      "used": false
-    },
-    {
-      "id": 73,
-      "topic": "What is scrum",
-      "used": false
-    },
-    {
-      "id": 74,
-      "topic": "What is technical debt",
-      "used": false
-    },
-    {
-      "id": 75,
-      "topic": "What is code review",
-      "used": false
-    },
-    {
-      "id": 76,
-      "topic": "What is refactoring",
-      "used": false
-    },
-    {
-      "id": 77,
-      "topic": "What is clean code",
-      "used": false
-    },
-    {
-      "id": 78,
-      "topic": "What is SOLID principles",
-      "used": false
-    },
-    {
-      "id": 79,
-      "topic": "What is design patterns",
-      "used": false
-    },
-    {
-      "id": 80,
-      "topic": "What is singleton pattern",
-      "used": false
-    },
-    {
-      "id": 81,
-      "topic": "What is factory pattern",
-      "used": false
-    },
-    {
-      "id": 82,
-      "topic": "What is MVC",
-      "used": false
-    },
-    {
-      "id": 83,
-      "topic": "What is MVVM",
-      "used": false
-    },
-    {
-      "id": 84,
-      "topic": "What is backend vs frontend",
-      "used": false
-    },
-    {
-      "id": 85,
-      "topic": "What is full stack",
-      "used": false
-    },
-    {
-      "id": 86,
-      "topic": "What is DevOps",
-      "used": false
-    },
-    {
-      "id": 87,
-      "topic": "What is SRE",
-      "used": false
-    },
-    {
-      "id": 88,
-      "topic": "What is Terraform",
-      "used": false
-    },
-    {
-      "id": 89,
-      "topic": "What is infrastructure as code",
-      "used": false
-    },
-    {
-      "id": 90,
-      "topic": "What is serverless",
-      "used": false
-    },
-    {
-      "id": 91,
-      "topic": "What is Lambda functions",
-      "used": false
-    },
-    {
-      "id": 92,
-      "topic": "What is a webhook",
-      "used": false
-    },
-    {
-      "id": 93,
-      "topic": "What is WebSocket",
-      "used": false
-    },
-    {
-      "id": 94,
-      "topic": "What is real time",
-      "used": false
-    },
-    {
-      "id": 95,
-      "topic": "What is rate limiting",
-      "used": false
-    },
-    {
-      "id": 96,
-      "topic": "What is pagination",
-      "used": false
-    },
-    {
-      "id": 97,
-      "topic": "What is authentication vs authorization",
-      "used": false
-    },
-    {
-      "id": 98,
-      "topic": "What is CORS",
-      "used": false
-    },
-    {
-      "id": 99,
-      "topic": "What is XSS",
-      "used": false
-    },
-    {
-      "id": 100,
-      "topic": "What is SQL injection",
-      "used": false
-    }
+    {"id": 1, "topic": "How YouTube's recommendation algorithm actually works", "used": false},
+    {"id": 2, "topic": "Why the CrowdStrike outage crashed 8.5 million computers", "used": false},
+    {"id": 3, "topic": "How ChatGPT actually generates responses", "used": false},
+    {"id": 4, "topic": "The real reason your internet is slow", "used": false},
+    {"id": 5, "topic": "How Spotify knows what song you want to hear next", "used": false},
+    {"id": 6, "topic": "Why Apple and Google are secretly frenemies", "used": false},
+    {"id": 7, "topic": "How TikTok's For You page reads your mind", "used": false},
+    {"id": 8, "topic": "The $100 billion bug that almost broke the world", "used": false},
+    {"id": 9, "topic": "How AI agents like Devin actually write code", "used": false},
+    {"id": 10, "topic": "Why every website tracks you and how cookies actually work", "used": false},
+    {"id": 11, "topic": "How Netflix serves 250 million people without crashing", "used": false},
+    {"id": 12, "topic": "The real story behind the Twitter/X rebrand disaster", "used": false},
+    {"id": 13, "topic": "How undersea cables carry 99% of the world's internet", "used": false},
+    {"id": 14, "topic": "Why your phone battery dies faster than it should", "used": false},
+    {"id": 15, "topic": "How Google Maps knows about traffic in real-time", "used": false},
+    {"id": 16, "topic": "The genius behind how Uber matches you with drivers", "used": false},
+    {"id": 17, "topic": "Why AWS going down takes half the internet with it", "used": false},
+    {"id": 18, "topic": "How facial recognition actually identifies you", "used": false},
+    {"id": 19, "topic": "The real reason tech layoffs keep happening", "used": false},
+    {"id": 20, "topic": "How Discord handles millions of messages per second", "used": false},
+    {"id": 21, "topic": "Why your smart home devices are security nightmares", "used": false},
+    {"id": 22, "topic": "How password managers keep your passwords safe", "used": false},
+    {"id": 23, "topic": "The dark truth about how data centers use water", "used": false},
+    {"id": 24, "topic": "How Shazam identifies any song in seconds", "used": false},
+    {"id": 25, "topic": "Why iMessage is blue and Android is green on purpose", "used": false},
+    {"id": 26, "topic": "How autonomous cars see the road without eyes", "used": false},
+    {"id": 27, "topic": "The crazy engineering behind how WiFi actually works", "used": false},
+    {"id": 28, "topic": "How OpenAI trains GPT models on the entire internet", "used": false},
+    {"id": 29, "topic": "Why your laptop has a Intel or Apple chip war going on", "used": false},
+    {"id": 30, "topic": "How VPNs actually protect your privacy", "used": false},
+    {"id": 31, "topic": "The real cost of running AI models like GPT-4", "used": false},
+    {"id": 32, "topic": "How Instagram decides what posts to show you", "used": false},
+    {"id": 33, "topic": "Why 5G was overhyped and what it actually does", "used": false},
+    {"id": 34, "topic": "How hackers actually break into systems", "used": false},
+    {"id": 35, "topic": "The engineering behind how Zoom handles video calls", "used": false},
+    {"id": 36, "topic": "How QR codes pack so much data in a tiny square", "used": false},
+    {"id": 37, "topic": "Why tech companies are obsessed with AI right now", "used": false},
+    {"id": 38, "topic": "How Amazon delivers packages so fast", "used": false},
+    {"id": 39, "topic": "The truth about quantum computers and why they matter", "used": false},
+    {"id": 40, "topic": "How deepfakes are made and why they're dangerous", "used": false},
+    {"id": 41, "topic": "Why your phone gets slower after software updates", "used": false},
+    {"id": 42, "topic": "How blockchain actually works without the crypto hype", "used": false},
+    {"id": 43, "topic": "The real reason NVIDIA is worth more than Google", "used": false},
+    {"id": 44, "topic": "How GitHub Copilot writes code using AI", "used": false},
+    {"id": 45, "topic": "Why SSDs are replacing hard drives everywhere", "used": false},
+    {"id": 46, "topic": "How streaming services compress video without losing quality", "used": false},
+    {"id": 47, "topic": "The engineering behind Apple's Face ID", "used": false},
+    {"id": 48, "topic": "How DNS translates website names to IP addresses", "used": false},
+    {"id": 49, "topic": "Why your WiFi password is actually really insecure", "used": false},
+    {"id": 50, "topic": "How Tesla's Autopilot actually sees the road", "used": false},
+    {"id": 51, "topic": "The billion dollar mistake in software: null references", "used": false},
+    {"id": 52, "topic": "How Google Search ranks billions of pages instantly", "used": false},
+    {"id": 53, "topic": "Why Silicon Valley keeps failing at social media", "used": false},
+    {"id": 54, "topic": "How AI image generators like DALL-E and Midjourney work", "used": false},
+    {"id": 55, "topic": "The truth about why apps need so many permissions", "used": false},
+    {"id": 56, "topic": "How WhatsApp's end-to-end encryption actually works", "used": false},
+    {"id": 57, "topic": "Why your phone's GPS works even without internet", "used": false},
+    {"id": 58, "topic": "How load balancers keep websites from crashing", "used": false},
+    {"id": 59, "topic": "The real reason tech interviews are so broken", "used": false},
+    {"id": 60, "topic": "How Claude and ChatGPT are actually different", "used": false},
+    {"id": 61, "topic": "Why programming languages keep getting invented", "used": false},
+    {"id": 62, "topic": "How Figma handles real-time collaboration", "used": false},
+    {"id": 63, "topic": "The engineering behind contactless payments", "used": false},
+    {"id": 64, "topic": "How antivirus software actually detects malware", "used": false},
+    {"id": 65, "topic": "Why startups fail even with good technology", "used": false},
+    {"id": 66, "topic": "How RAG makes AI chatbots way smarter", "used": false},
+    {"id": 67, "topic": "The real reason Apple won't let you sideload apps", "used": false},
+    {"id": 68, "topic": "How your credit score is calculated by algorithms", "used": false},
+    {"id": 69, "topic": "Why every company wants to be an AI company now", "used": false},
+    {"id": 70, "topic": "How voice assistants understand what you're saying", "used": false},
+    {"id": 71, "topic": "The dark side of recommendation algorithms", "used": false},
+    {"id": 72, "topic": "How WebSockets enable real-time apps", "used": false},
+    {"id": 73, "topic": "Why Meta keeps pivoting from metaverse to AI", "used": false},
+    {"id": 74, "topic": "How CDNs make websites load faster worldwide", "used": false},
+    {"id": 75, "topic": "The engineering behind how Airbnb matches guests and hosts", "used": false},
+    {"id": 76, "topic": "Why your old iPhone still gets updates", "used": false},
+    {"id": 77, "topic": "How machine learning models actually learn", "used": false},
+    {"id": 78, "topic": "The truth about how much AI really costs to run", "used": false},
+    {"id": 79, "topic": "How rate limiting protects APIs from abuse", "used": false},
+    {"id": 80, "topic": "Why every tech company is building their own chips", "used": false},
+    {"id": 81, "topic": "How OAuth lets you log in with Google everywhere", "used": false},
+    {"id": 82, "topic": "The real story behind the Log4j vulnerability", "used": false},
+    {"id": 83, "topic": "How multiplayer games sync millions of players", "used": false},
+    {"id": 84, "topic": "Why Windows and Mac can't agree on file systems", "used": false},
+    {"id": 85, "topic": "How GitHub Actions automates developer workflows", "used": false},
+    {"id": 86, "topic": "The engineering behind Notion's collaborative editing", "used": false},
+    {"id": 87, "topic": "Why AI hallucinations happen and how to fix them", "used": false},
+    {"id": 88, "topic": "How Cloudflare protects websites from DDoS attacks", "used": false},
+    {"id": 89, "topic": "The real reason Google killed so many products", "used": false},
+    {"id": 90, "topic": "How vector databases power AI search", "used": false},
+    {"id": 91, "topic": "Why your browser uses so much RAM", "used": false},
+    {"id": 92, "topic": "How LLMs like GPT-4 actually understand context", "used": false},
+    {"id": 93, "topic": "The chaos engineering behind Netflix's reliability", "used": false},
+    {"id": 94, "topic": "Why tech debt eventually kills products", "used": false},
+    {"id": 95, "topic": "How biometric authentication actually verifies you", "used": false},
+    {"id": 96, "topic": "The truth about Apple vs Epic Games lawsuit", "used": false},
+    {"id": 97, "topic": "How caching makes everything on the internet faster", "used": false},
+    {"id": 98, "topic": "Why every AI startup is fighting for GPU access", "used": false},
+    {"id": 99, "topic": "How payment processors handle billions in transactions", "used": false},
+    {"id": 100, "topic": "The real impact of AI on software developer jobs", "used": false}
   ]
 }
