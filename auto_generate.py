@@ -102,27 +102,33 @@ def generate_script_with_ai(topic: str, duo: str = DEFAULT_DUO) -> dict:
     char1_display = char_config.get("char1", {}).get("display_name", "Peter")
     char2_display = char_config.get("char2", {}).get("display_name", "Stewie")
     
-    prompt = f"""Generate a TikTok script where {char1_display} and {char2_display} explain "{topic}" in a funny but ACTUALLY EDUCATIONAL way.
+    prompt = f"""Generate a TikTok script where {char1_display} and {char2_display} do a TECHNICAL DEEP DIVE on "{topic}".
 
 CRITICAL REQUIREMENTS:
-- MUST explain the technical concept clearly - viewers should LEARN something real
-- Use ONE good analogy to make it relatable, but don't rely only on analogies
-- Include the actual technical explanation (what it is, how it works, why it matters)
-- 10-14 lines of dialogue total
+- This is for SOFTWARE ENGINEERS and TECH ENTHUSIASTS - don't dumb it down
+- Use REAL technical terms: algorithms, data structures, protocols, system design concepts
+- Explain the ACTUAL implementation details - how it works under the hood
+- Include specific numbers, metrics, or technical facts when relevant
+- NO surface-level fluff - every line should teach something specific
+- 12-16 lines of dialogue total
 - Each line should be 1-2 sentences max (under 15 words per line)
-- Keep total runtime under 50 seconds when spoken
+- Keep total runtime under 60 seconds when spoken
 
 STRUCTURE:
-1. Hook/intro question (1-2 lines)
-2. Simple analogy to build intuition (2-3 lines)  
-3. ACTUAL technical explanation - what it really is (3-4 lines)
-4. Real-world example or use case (2-3 lines)
-5. Funny callback/punchline ending (1-2 lines)
+1. Hook with a surprising technical fact (1-2 lines)
+2. The core technical concept explained precisely (3-4 lines)
+3. Implementation details / how it actually works (4-5 lines)
+4. Edge cases, tradeoffs, or why it's designed this way (2-3 lines)
+5. Quick wrap-up or mind-blowing conclusion (1-2 lines)
+
+EXAMPLE DEPTH LEVEL:
+- BAD: "It's like a recommendation system that shows you videos"
+- GOOD: "It uses collaborative filtering combined with a deep neural network that processes watch time, engagement signals, and content embeddings"
 
 CHARACTER DYNAMICS:
-- {char1_display}: Asks questions, tries to understand, occasionally gets confused
-- {char2_display}: Explains clearly with technical accuracy, drops witty comments
-- Keep it entertaining but prioritize education over jokes
+- {char1_display}: Asks pointed technical questions, wants specifics
+- {char2_display}: Explains with technical precision, uses exact terminology
+- Keep some humor but PRIORITIZE technical depth over jokes
 
 Output ONLY valid JSON (no markdown, no explanation):
 {{
@@ -152,7 +158,7 @@ Use pause_after_ms of 300-500 between lines. Alternate characters naturally."""
         json={
             "model": "gpt-4o",
             "messages": [
-                {"role": "system", "content": "You are a comedy writer for viral TikTok videos. Output only valid JSON."},
+                {"role": "system", "content": "You are a senior software engineer creating technical explainer content for developers. Be precise, use real terminology, and go deep. Output only valid JSON."},
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.9,
