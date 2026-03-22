@@ -45,23 +45,38 @@ def get_cookies_list(cookies_file: Path = None):
         return None
 
 
-def dismiss_modal_dialogs(page):
+def dismiss_modal_dialogs(page, confirm_post=False):
     """Dismiss any modal dialogs that might block interaction.
     
     Handles:
     - "Are you sure you want to exit?" confirmation modals
     - Other confirmation/warning dialogs
+    
+    Args:
+        page: Playwright page object
+        confirm_post: If True, click Post/Confirm on confirmation dialogs instead of Cancel
     """
     modal_handled = False
     
     try:
+        # First check if this is a POST confirmation modal (not an exit modal)
+        # These should be confirmed, not cancelled
+        if confirm_post:
+            try:
+                # Look for Post button in a modal/dialog context
+                post_confirm = page.locator('[role="dialog"] button:has-text("Post"), [class*="modal"] button:has-text("Post")')
+                if post_confirm.count() > 0 and post_confirm.first.is_visible():
+                    print("  → Confirming post via modal Post button...")
+                    post_confirm.first.click(timeout=3000)
+                    return True
+            except:
+                pass
+        
         # Check for exit confirmation modal
         exit_modal_selectors = [
             'text="Are you sure you want to exit"',
             'text="Are you sure you want to leave"',
             'text="Discard changes"',
-            '[class*="modal"][class*="confirm"]',
-            '[class*="Modal"][class*="Confirm"]',
         ]
         
         for selector in exit_modal_selectors:
@@ -395,7 +410,7 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None, cookies_
             
             # Extra buffer after checks pass (TikTok needs time to fully process)
             print("  → Extra buffer for TikTok processing...")
-            time.sleep(5)
+            time.sleep(8)  # Increased from 5 to give more time for checks
             
             # Take screenshot before clicking Post
             page.screenshot(path=str(debug_dir / "03b_before_post.png"))
@@ -425,24 +440,48 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None, cookies_
                     dismiss_modal_dialogs(page)
                     time.sleep(1)
                 
+                # Try using Playwright's get_by_role which is more reliable
+                # Use LAST button since the real Post button is at the bottom of the page
+                try:
+                    # Get button by role with exact name match
+                    post_btn = page.get_by_role("button", name="Post", exact=True)
+                    btn_count = post_btn.count()
+                    print(f"  Found {btn_count} button(s) named 'Post'")
+                    
+                    if btn_count > 0:
+                        # Use the LAST one - the submit button is at the bottom
+                        target_btn = post_btn.last if btn_count > 1 else post_btn.first
+                        if target_btn.is_visible():
+                            target_btn.scroll_into_view_if_needed()
+                            time.sleep(0.3)
+                            dismiss_modal_dialogs(page)
+                            target_btn.click(timeout=5000)
+                            post_clicked = True
+                            print(f"  ✓ Clicked via get_by_role('button', name='Post') - using last button")
+                            
+                            # Wait a moment and check for confirmation popup
+                            time.sleep(1.5)
+                            
+                            # Handle POST CONFIRMATION popup (click Post/Confirm, NOT Cancel)
+                            dismiss_modal_dialogs(page, confirm_post=True)
+                            
+                            break
+                except Exception as e:
+                    print(f"  get_by_role attempt failed: {e}")
+                
+                # Fallback: Try CSS selectors
                 for selector in [
-                    'button:has-text("Post")',
                     '[data-e2e="post-button"]',
                     'button[class*="TUXButton"][class*="primary"]',
-                    'button[class*="post" i]',
-                    'button[class*="Post" i]',
+                    'button[class*="primary"]:text-is("Post")',
                 ]:
                     try:
                         post_btn = page.locator(selector).first
                         if post_btn.count() > 0:
-                            # Scroll the button into view
                             post_btn.scroll_into_view_if_needed()
                             time.sleep(0.3)
-                            
-                            # Check for and dismiss modals right before clicking
                             dismiss_modal_dialogs(page)
                             
-                            # Check if button is enabled
                             is_disabled = post_btn.get_attribute('disabled')
                             btn_class = post_btn.get_attribute('class') or ''
                             print(f"  Button state: disabled={is_disabled}, class={btn_class[:50]}...")
@@ -453,14 +492,11 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None, cookies_
                                 print(f"  ✓ Clicked: {selector}")
                                 break
                     except Exception as e:
-                        # Check if a modal appeared during click attempt
                         if dismiss_modal_dialogs(page):
                             print(f"  ⚠️ Modal blocked click, dismissed and will retry...")
-                            break  # Break inner loop to retry
-                        print(f"  Selector {selector} failed: {e}")
+                            break
                         continue
                 
-                # After each attempt, check if modal appeared
                 time.sleep(0.5)
                 dismiss_modal_dialogs(page)
             
@@ -491,22 +527,53 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None, cookies_
                 time.sleep(0.3)
                 
                 clicked = page.evaluate('''(function() {
+                    // Look specifically for the pink/red Post button
+                    // Check background color to ensure it's the pink submit button
                     var btns = document.querySelectorAll('button');
-                    var clicked = false;
+                    var postBtn = null;
+                    
                     for (var i = 0; i < btns.length; i++) {
                         var btn = btns[i];
-                        var text = (btn.textContent || '').trim().toLowerCase();
-                        if (text === 'post' && !btn.disabled) {
-                            console.log('Found Post button:', btn);
-                            btn.scrollIntoView({behavior: 'smooth', block: 'center'});
-                            btn.focus();
-                            btn.click();
-                            btn.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, view: window}));
-                            clicked = true;
+                        var text = (btn.textContent || '').trim();
+                        
+                        // Exact match "Post" (not "Posts")
+                        if (text !== 'Post') continue;
+                        
+                        // Check if it's in the sidebar (skip those)
+                        var inSidebar = btn.closest('[class*="SideNav"], [class*="sidebar"], aside, nav, [class*="LeftNav"]');
+                        if (inSidebar) continue;
+                        
+                        // Check computed style - the Post button is pink/red
+                        var style = window.getComputedStyle(btn);
+                        var bgColor = style.backgroundColor;
+                        
+                        // Pink/red colors have high red component: rgb(254, xx, xx) or rgb(255, xx, xx)
+                        // or rgba with similar values
+                        var isPink = bgColor.indexOf('254') !== -1 || bgColor.indexOf('255') !== -1 ||
+                                     bgColor.indexOf('fe') !== -1 || // hex
+                                     btn.className.indexOf('primary') !== -1 ||
+                                     btn.className.indexOf('TUX') !== -1;
+                        
+                        // Also check if it's near Save draft / Discard (sibling buttons)
+                        var parent = btn.parentElement;
+                        var hasSiblingButtons = parent && 
+                            (parent.textContent.indexOf('Save draft') !== -1 || 
+                             parent.textContent.indexOf('Discard') !== -1);
+                        
+                        if (isPink || hasSiblingButtons) {
+                            postBtn = btn;
+                            console.log('Found Post button:', btn.className, 'bgColor:', bgColor);
                             break;
                         }
                     }
-                    return clicked;
+                    
+                    if (postBtn && !postBtn.disabled) {
+                        postBtn.scrollIntoView({behavior: 'smooth', block: 'center'});
+                        postBtn.focus();
+                        postBtn.click();
+                        return true;
+                    }
+                    return false;
                 })()''')
                 if clicked:
                     print("  ✓ JavaScript click executed")
@@ -514,14 +581,60 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None, cookies_
             
             # Extra wait and retry if Post button still visible
             time.sleep(3)
-            dismiss_modal_dialogs(page)  # Handle any post-click modals
             
-            still_has_post = page.locator('button:has-text("Post")').count() > 0
-            if still_has_post:
-                print("  ⚠️ Post button still visible, trying force click...")
-                dismiss_modal_dialogs(page)
-                page.locator('button:has-text("Post")').first.click(force=True, timeout=5000)
-                time.sleep(2)
+            # CRITICAL: Handle post confirmation - click Post in any confirmation modal
+            max_retry_loops = 10
+            for retry_loop in range(max_retry_loops):
+                # After clicking Post, if there's a confirmation modal, confirm it
+                modal_dismissed = dismiss_modal_dialogs(page, confirm_post=True)
+                
+                # Check if Post button is still there (use exact match to avoid "Posts" sidebar)
+                post_btn_retry = page.locator('button:text-is("Post")').first
+                still_has_post = post_btn_retry.count() > 0
+                
+                if not still_has_post:
+                    print("  ✓ Post button gone - post likely succeeded!")
+                    break
+                    
+                if still_has_post and post_btn_retry.is_visible():
+                    print(f"  ⚠️ Post button still visible (retry {retry_loop+1}), clicking...")
+                    try:
+                        # Confirm any post modals first
+                        dismiss_modal_dialogs(page, confirm_post=True)
+                        time.sleep(0.3)
+                        
+                        # Scroll into view and click
+                        post_btn_retry.scroll_into_view_if_needed()
+                        time.sleep(0.2)
+                        post_btn_retry.click(timeout=5000)
+                        print(f"  → Clicked Post button (retry {retry_loop+1})")
+                        time.sleep(2)
+                    except Exception as e:
+                        print(f"  ⚠️ Click failed: {e}")
+                        # Try JavaScript click (exclude sidebar, find pink button)
+                        try:
+                            page.evaluate('''(function() {
+                                var btns = document.querySelectorAll('button');
+                                for (var i = 0; i < btns.length; i++) {
+                                    var btn = btns[i];
+                                    var text = (btn.textContent || '').trim();
+                                    var btnClass = (btn.className || '');
+                                    var isExactPost = text === 'Post';
+                                    var isPrimary = btnClass.indexOf('primary') !== -1;
+                                    var inSidebar = btn.closest('[class*="SideNav"], aside, nav');
+                                    if (isExactPost && isPrimary && !inSidebar && !btn.disabled) {
+                                        btn.scrollIntoView({block: 'center'});
+                                        btn.click();
+                                        break;
+                                    }
+                                }
+                            })()''')
+                            print(f"  → JS clicked Post button (retry {retry_loop+1})")
+                            time.sleep(2)
+                        except:
+                            pass
+                else:
+                    break
             
             # Wait for post to complete (look for success indicators)
             print("  → Waiting for post confirmation...")
@@ -536,9 +649,9 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None, cookies_
                     if dismiss_modal_dialogs(page):
                         print("  ⚠️ Modal dismissed during confirmation, re-clicking Post...")
                         time.sleep(0.5)
-                        # Re-click Post button after dismissing modal
+                        # Re-click Post button after dismissing modal (exact match to avoid sidebar)
                         try:
-                            post_retry = page.locator('button:has-text("Post")').first
+                            post_retry = page.locator('button:text-is("Post")').first
                             if post_retry.count() > 0 and post_retry.is_visible():
                                 post_retry.click(timeout=5000)
                                 print("  → Re-clicked Post button")
@@ -562,12 +675,21 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None, cookies_
                         print("  ✓ 'Your video is being uploaded' detected!")
                         success = True
                         break
+                    if "video published" in page_content:
+                        print("  ✓ 'Video published' detected!")
+                        success = True
+                        break
                     if "successfully" in page_content or "posted" in page_content:
                         print("  ✓ Success message detected!")
                         success = True
                         break
                     if "/profile" in current_url or "/@" in current_url:
                         print("  ✓ Redirected to profile!")
+                        success = True
+                        break
+                    # TikTok redirects to /creator/content after successful post
+                    if "/creator/content" in current_url or "/creator#/content" in current_url:
+                        print(f"  ✓ Redirected to creator content page!")
                         success = True
                         break
                     if "manage" in current_url or "content" in current_url:
@@ -580,7 +702,7 @@ def upload_video(video_path: str, caption: str, tags: list[str] = None, cookies_
                         break
                     
                     # Check if Post button changed to "Posting..." or disappeared
-                    post_btn_check = page.locator('button:has-text("Post")')
+                    post_btn_check = page.locator('button:text-is("Post")')
                     posting_btn = page.locator('button:has-text("Posting")')
                     
                     if posting_btn.count() > 0:
