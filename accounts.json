@@ -17,7 +17,7 @@
         },
         "instagram": {
           "enabled": true,
-          "credentials": "credentials/instagram_tech.json",
+          "credentials": "instagram_session.json",
           "username": null
         }
       },
